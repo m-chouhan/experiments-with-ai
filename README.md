@@ -11,7 +11,7 @@ quote with bikes, cars and trucks across small, medium and large spots.
 - `projects/junior` — how a fresher writes it: one file, if/else per vehicle type, spot lists
   per size, hardcoded rates, fee logic copy-pasted into `leave` and `quote`.
 - `projects/mature` — how an experienced engineer writes it: one file of the same length,
-  vehicles and spots as data, and three small classes (`ParkingLot` allocates spots,
+  vehicles, spots and commands as data tables, and three small classes (`ParkingLot` allocates spots,
   `Pricing` computes fees, `Cli` parses commands).
 
 ## The changes (applied in order)
@@ -48,5 +48,6 @@ Results:
 - `results/transcripts/<model>/<version>-<run>/<change>.md` — readable step log: the model's
   thinking, what it said, each tool call and its result. Raw stream in `.jsonl` alongside.
 - `results/final-diffs/` — baseline → after change 2, per run.
+- `results/v1/` — first round, run against the original mature baseline (see its README).
 
 `archive/tictactoe-pilot/` holds the earlier tic-tac-toe pilot.

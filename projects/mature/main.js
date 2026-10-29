@@ -12,6 +12,12 @@ const SPOTS = [
   { id: 'L1', size: 'large' },
 ];
 
+const COMMANDS = {
+  park: { args: ['plate', 'type'], run: (cli, plate, type) => cli.park(plate, type) },
+  leave: { args: ['plate', 'hours'], run: (cli, plate, hours) => cli.charge('leave', plate, hours) },
+  quote: { args: ['plate', 'hours'], run: (cli, plate, hours) => cli.charge('quote', plate, hours) },
+};
+
 class ParkingLot {
   constructor(spots) {
     this.spots = spots;
@@ -55,11 +61,10 @@ class Cli {
   }
 
   handle(line) {
-    const [command, plate, arg, ...extra] = line.trim().split(/\s+/);
-    if (arg === undefined || extra.length) return 'INVALID';
-    if (command === 'park') return this.park(plate, arg);
-    if (command === 'leave' || command === 'quote') return this.charge(command, plate, arg);
-    return 'INVALID';
+    const [name, ...args] = line.trim().split(/\s+/);
+    const command = COMMANDS[name];
+    if (!command || args.length !== command.args.length) return 'INVALID';
+    return command.run(this, ...args);
   }
 
   park(plate, type) {
