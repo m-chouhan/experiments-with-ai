@@ -182,6 +182,16 @@ exports.tildeTrimReplace = '$1~'
 createToken('TILDE', `^${src[t.LONETILDE]}${src[t.XRANGEPLAIN]}$`)
 createToken('TILDELOOSE', `^${src[t.LONETILDE]}${src[t.XRANGEPLAINLOOSE]}$`)
 
+// Compatible release ranges.
+// Meaning is "compatible release"
+createToken('LONECOMPATIBLE', '(?:~=)')
+
+createToken('COMPATIBLETRIM', `(\\s*)${src[t.LONECOMPATIBLE]}\\s+`, true)
+exports.compatibleTrimReplace = '$1~='
+
+createToken('COMPATIBLE', `^${src[t.LONECOMPATIBLE]}${src[t.XRANGEPLAIN]}$`)
+createToken('COMPATIBLELOOSE', `^${src[t.LONECOMPATIBLE]}${src[t.XRANGEPLAINLOOSE]}$`)
+
 // Caret ranges.
 // Meaning is "at least and backwards compatible with"
 createToken('LONECARET', '(?:\\^)')

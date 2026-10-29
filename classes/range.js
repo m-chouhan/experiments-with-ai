@@ -126,6 +126,10 @@ class Range {
     range = range.replace(re[t.TILDETRIM], tildeTrimReplace)
     debug('tilde trim', range)
 
+    // `~= 1.2.3` => `~=1.2.3`
+    range = range.replace(re[t.COMPATIBLETRIM], compatibleTrimReplace)
+    debug('compatible trim', range)
+
     // `^ 1.2.3` => `^1.2.3`
     range = range.replace(re[t.CARETTRIM], caretTrimReplace)
     debug('caret trim', range)
@@ -230,6 +234,7 @@ const {
   t,
   comparatorTrimReplace,
   tildeTrimReplace,
+  compatibleTrimReplace,
   caretTrimReplace,
 } = require('../internal/re')
 const { FLAG_INCLUDE_PRERELEASE, FLAG_LOOSE } = require('../internal/constants')
@@ -258,7 +263,7 @@ const isSatisfiable = (comparators, options) => {
   return result
 }
 
-// comprised of xranges, tildes, stars, and gtlt's at this point.
+// comprised of xranges, tildes, compatible releases, carets, stars, and gtlt's at this point.
 // already replaced the hyphen ranges
 // turn into a set of JUST comparators.
 const parseComparator = (comp, options) => {
@@ -266,6 +271,8 @@ const parseComparator = (comp, options) => {
   debug('comp', comp, options)
   comp = replaceCarets(comp, options)
   debug('caret', comp)
+  comp = replaceCompatibleReleases(comp, options)
+  debug('compatible', comp)
   comp = replaceTildes(comp, options)
   debug('tildes', comp)
   comp = replaceXRanges(comp, options)
@@ -325,6 +332,48 @@ const replaceTilde = (comp, options) => {
     }
 
     debug('tilde return', ret)
+    return ret
+  })
+}
+
+// ~=1.2.3 := >=1.2.3 <1.3.0-0
+// ~=1.2 := >=1.2.0 <2.0.0-0
+// ~=1 := >=1.0.0 <2.0.0-0
+const replaceCompatibleReleases = (comp, options) => {
+  return comp
+    .trim()
+    .split(/\s+/)
+    .map((c) => replaceCompatible(c, options))
+    .join(' ')
+}
+
+const replaceCompatible = (comp, options) => {
+  const r = options.loose ? re[t.COMPATIBLELOOSE] : re[t.COMPATIBLE]
+  const z = options.includePrerelease ? '-0' : ''
+  return comp.replace(r, (_, M, m, p, pr) => {
+    debug('compatible', comp, _, M, m, p, pr)
+    let ret
+
+    if (isX(M)) {
+      ret = ''
+    } else if (isX(m)) {
+      // ~=1 := >=1.0.0 <2.0.0-0
+      ret = `>=${M}.0.0${z} <${+M + 1}.0.0-0`
+    } else if (isX(p)) {
+      // ~=1.2 := >=1.2.0 <2.0.0-0
+      ret = `>=${M}.${m}.0${z} <${+M + 1}.0.0-0`
+    } else if (pr) {
+      debug('replaceCompatible pr', pr)
+      // ~=1.2.3-beta.2 := >=1.2.3-beta.2 <1.3.0-0
+      ret = `>=${M}.${m}.${p}-${pr
+      } <${M}.${+m + 1}.0-0`
+    } else {
+      // ~=1.2.3 := >=1.2.3 <1.3.0-0
+      ret = `>=${M}.${m}.${p
+      } <${M}.${+m + 1}.0-0`
+    }
+
+    debug('compatible return', ret)
     return ret
   })
 }

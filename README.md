@@ -339,6 +339,21 @@ comparator.  Allows minor-level changes if not.
   `1.2.4-beta.2` would not, because it is a prerelease of a
   different `[major, minor, patch]` tuple.
 
+#### Compatible Release Ranges `~=1.2.3` `~=1.2` `~=1`
+
+Allows the last component given to increase. All components before the
+last are fixed.
+
+* `~=1.2.3` := `>=1.2.3 <1.(2+1).0` := `>=1.2.3 <1.3.0-0`
+* `~=1.2` := `>=1.2.0 <(1+1).0.0` := `>=1.2.0 <2.0.0-0`
+* `~=1` := `>=1.0.0 <(1+1).0.0` := `>=1.0.0 <2.0.0-0`
+* `~=0.2.3` := `>=0.2.3 <0.(2+1).0` := `>=0.2.3 <0.3.0-0`
+* `~=0.2` := `>=0.2.0 <(0+1).0.0` := `>=0.2.0 <1.0.0-0`
+* `~=0` := `>=0.0.0 <(0+1).0.0` := `>=0.0.0 <1.0.0-0`
+* `~=1.2.3-beta.2` := `>=1.2.3-beta.2 <1.3.0-0` Note that this behaves
+  the same as a patch-level compatible release. Prereleases of the lower
+  bound are allowed if they are greater than or equal to `beta.2`.
+
 #### Caret Ranges `^1.2.3` `^0.2.5` `^0.0.4`
 
 Allows changes that do not modify the left-most non-zero element in the
