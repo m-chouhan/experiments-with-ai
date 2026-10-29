@@ -1,0 +1,63 @@
+diff --git a/classes/range.js b/classes/range.js
+index a7d6556..d5f0a40 100644
+--- a/classes/range.js
++++ b/classes/range.js
+@@ -266,6 +266,8 @@ const parseComparator = (comp, options) => {
+   debug('comp', comp, options)
+   comp = replaceCarets(comp, options)
+   debug('caret', comp)
++  comp = replaceCompats(comp, options)
++  debug('compat', comp)
+   comp = replaceTildes(comp, options)
+   debug('tildes', comp)
+   comp = replaceXRanges(comp, options)
+@@ -329,6 +331,36 @@ const replaceTilde = (comp, options) => {
+   })
+ }
+ 
++// ~= --> * (any)
++// ~=1, ~=1.x --> >=1.0.0 <2.0.0-0
++// ~=1.2, ~=1.2.x --> >=1.2.0 <2.0.0-0
++// ~=1.2.3 --> >=1.2.3 <1.3.0-0
++const replaceCompats = (comp, options) => {
++  return comp
++    .trim()
++    .split(/\s+/)
++    .map((c) => replaceCompat(c, options))
++    .join(' ')
++}
++
++const replaceCompat = (comp, options) => {
++  const r = options.loose ? re[t.COMPATLOOSE] : re[t.COMPAT]
++  const z = options.includePrerelease ? '-0' : ''
++  return comp.replace(r, (_, M, m, p, pr) => {
++    debug('compat', comp, _, M, m, p, pr)
++    if (isX(M)) {
++      return ''
++    } else if (isX(m)) {
++      return `>=${M}.0.0${z} <${+M + 1}.0.0-0`
++    } else if (isX(p)) {
++      return `>=${M}.${m}.0${z} <${+M + 1}.0.0-0`
++    } else if (pr) {
++      return `>=${M}.${m}.${p}-${pr} <${M}.${+m + 1}.0-0`
++    }
++    return `>=${M}.${m}.${p} <${M}.${+m + 1}.0-0`
++  })
++}
++
+ // ^ --> * (any, kinda silly)
+ // ^2, ^2.x, ^2.x.x --> >=2.0.0 <3.0.0-0
+ // ^2.0, ^2.0.x --> >=2.0.0 <3.0.0-0
+diff --git a/internal/re.js b/internal/re.js
+index 2ec2c22..736e67e 100644
+--- a/internal/re.js
++++ b/internal/re.js
+@@ -221,3 +221,8 @@ createToken('STAR', '(<|>)?=?\\s*\\*')
+ // >=0.0.0 is like a star
+ createToken('GTE0', '^\\s*>=\\s*0\\.0\\.0\\s*$')
+ createToken('GTE0PRE', '^\\s*>=\\s*0\\.0\\.0-0\\s*$')
++
++// Compatible release ranges (~=), as in Python.
++// The last given component may increase.
++createToken('COMPAT', `^~=${src[t.XRANGEPLAIN]}$`)
++createToken('COMPATLOOSE', `^~=${src[t.XRANGEPLAINLOOSE]}$`)

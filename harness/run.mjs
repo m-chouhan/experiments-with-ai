@@ -1,9 +1,11 @@
-// Usage: node harness/run.mjs [--model sonnet|haiku] [--runs 1] [--only junior|mature]
-// For each version: copy it into a fresh git repo (no tests, no prompts), let `claude -p`
-// apply change 1 then change 2, commit after each, run the hidden tests, then fetch the
-// result into this repo as branch exp/<model>/<version>-<run>. Writes results/<timestamp>.json.
+// Usage: node harness/run.mjs [--pair parking|semver] [--model sonnet|haiku] [--runs 1]
+//                             [--only <version>] [--task <task id>]
+// For each version of the pair: copy it into a fresh git repo (no tests, no prompts), let
+// `claude -p` apply each task, commit, run the hidden tests, then fetch the result into this
+// repo as a branch under exp/<model>/<pair>/. Parking's changes are chained (change 2 builds
+// on change 1); semver's tasks each start from the baseline. Writes results/<timestamp>.json.
 // Claude runs under sandbox-exec: it cannot read this repo or write outside its workdir.
-// Per change, the full transcript and a readable step log go to results/transcripts/.
+// Per task, the full transcript and a readable step log go to results/transcripts/.
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -12,7 +14,23 @@ import { fileURLToPath } from 'node:url';
 
 const MODELS = { sonnet: 'claude-sonnet-5-5', haiku: 'claude-haiku-4-5-20251001' };
 const TOOLS = 'Read,Edit,Write,Bash,Glob,Grep';
-const CHANGES = ['change1', 'change2'];
+const SEMVER_TASKS = ['t1-uppercase-v', 't2-prerelease-tags', 't3-natural-prerelease', 't4-compatible-release'];
+const PAIRS = {
+  parking: {
+    versions: ['junior', 'mature'],
+    chained: true,
+    tasks: [
+      { id: 'change1', prompt: 'prompts/change1.md', tests: ['baseline/baseline.test.js', 'target/change1.test.js'] },
+      { id: 'change2', prompt: 'prompts/change2.md', tests: ['baseline/baseline.test.js', 'target/change1.test.js', 'target/change2.test.js'] },
+    ],
+  },
+  semver: {
+    versions: ['good', 'bad'],
+    chained: false,
+    upstreamTests: true,
+    tasks: SEMVER_TASKS.map((id) => ({ id, prompt: `prompts/semver/${id}.md`, tests: [`semver/${id}.test.mjs`] })),
+  },
+};
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const arg = (name, fallback) => {
   const i = process.argv.indexOf(`--${name}`);
@@ -21,8 +39,12 @@ const arg = (name, fallback) => {
 const modelName = arg('model', 'sonnet');
 const MODEL = MODELS[modelName];
 const runs = Number(arg('runs', 1));
+const pairName = arg('pair', 'parking');
+const pair = PAIRS[pairName];
 const only = arg('only', null);
-const versions = ['junior', 'mature'].filter((v) => !only || v === only);
+const onlyTask = arg('task', null);
+const versions = pair.versions.filter((v) => !only || v === only);
+const tasks = pair.tasks.filter((t) => !onlyTask || t.id === onlyTask);
 
 const sh = (cmd, args, cwd) => spawnSync(cmd, args, { cwd, encoding: 'utf8' });
 const git = (cwd, ...args) => sh('git', ['-c', 'user.name=lld-harness', '-c', 'user.email=harness@localhost', ...args], cwd);
@@ -34,6 +56,20 @@ const runTests = (workdir, files) => {
   const count = (label) => Number(new RegExp(`ℹ ${label} (\\d+)`).exec(res.stdout)?.[1]);
   const failing = [...res.stdout.matchAll(/^✖ (.+?) \(/gm)].map((m) => m[1]).filter((n) => !n.startsWith('failing'));
   return { passed: count('pass'), failed: count('fail'), failing: [...new Set(failing)] };
+};
+
+// The project's own test suite, run against the agent's code but with the original test
+// files, so an agent editing tests cannot hide a regression.
+const runUpstreamTests = (workdir, version) => {
+  const copy = fs.mkdtempSync(path.join(os.tmpdir(), `upstream-${version}-`));
+  fs.cpSync(workdir, copy, { recursive: true, filter: (src) => !src.endsWith('/.git') });
+  fs.rmSync(path.join(copy, 'test'), { recursive: true, force: true });
+  fs.cpSync(path.join(root, 'projects', version, 'test'), path.join(copy, 'test'), { recursive: true });
+  const res = spawnSync('npx', ['tap', '--no-coverage', '-R', 'terse'], { cwd: copy, encoding: 'utf8', timeout: 10 * 60 * 1000 });
+  fs.rmSync(copy, { recursive: true, force: true });
+  const out = (res.stdout ?? '').replace(/\x1b\[[0-9;]*[A-Za-z]|\u200b/g, '');
+  const n = (re) => Number(re.exec(out.split('Asserts:').at(-1))?.[1] ?? 0);
+  return { upstream_ok: res.status === 0, upstream_passed: n(/(\d+) passed/), upstream_failed: n(/(\d+) failed/) };
 };
 
 const sandboxProfile = (workdir) => {
@@ -129,41 +165,61 @@ const askClaude = (workdir, prompt, logBase, title) => {
   return metrics;
 };
 
-const results = [];
-for (let run = 1; run <= runs; run++) for (const version of versions) {
-  const workdir = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), `parking-${version}-`)));
+const freshRepo = (version) => {
+  const workdir = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), `${pairName}-${version}-`)));
   fs.cpSync(path.join(root, 'projects', version), workdir, { recursive: true });
   git(workdir, 'init', '-q', '-b', 'main');
   git(workdir, 'add', '-A');
   git(workdir, 'commit', '-q', '-m', `baseline (${version})`);
+  return workdir;
+};
 
-  for (const [i, change] of CHANGES.entries()) {
-    const prompt = fs.readFileSync(path.join(root, 'prompts', `${change}.md`), 'utf8');
-    const logBase = path.join(root, 'results', 'transcripts', modelName, `${version}-${run}`, change);
-    const base = sh('git', ['rev-parse', 'HEAD'], workdir).stdout.trim();
-    const agent = askClaude(workdir, prompt, logBase, `${version} · ${change} · ${modelName} · run ${run}`);
-    git(workdir, 'add', '-A');
-    git(workdir, 'commit', '-q', '--allow-empty', '-m', `${change} (${version})`, '-m',
-      `model=${MODEL} wall_s=${agent.wall_s} total_tokens=${agent.total_tokens} cost_usd=${agent.cost_usd}`);
-    const diff = sh('git', ['diff', '--shortstat', base, 'HEAD'], workdir).stdout.trim();
-    const tests = runTests(workdir, ['baseline/baseline.test.js', ...CHANGES.slice(0, i + 1).map((c) => `target/${c}.test.js`)]);
-    const row = { model: MODEL, run, version, change, ...agent, diff, ...tests };
-    results.push(row);
-    fs.appendFileSync(`${logBase}.md`, `\n## Outcome\n\nHidden tests: ${tests.passed}/${tests.passed + tests.failed} passed. ${diff}\n` +
-      tests.failing.map((t) => `- failed: ${t}\n`).join(''));
-    console.log(`#${run} ${version} ${change}: tests ${tests.passed}/${tests.passed + tests.failed}, ` +
-      `${agent.wall_s}s, ${agent.tool_calls} calls, ${agent.total_tokens} tokens, $${agent.cost_usd?.toFixed(3)}, ${diff}`);
-  }
-  git(root, 'fetch', '-q', '--force', workdir, `main:exp/${modelName}/${version}-${run}`);
+const results = [];
+const doTask = (workdir, version, task, run) => {
+  const prompt = fs.readFileSync(path.join(root, task.prompt), 'utf8');
+  const logBase = path.join(root, 'results', 'transcripts', modelName, pairName, `${version}-${run}`, task.id);
+  const base = sh('git', ['rev-parse', 'HEAD'], workdir).stdout.trim();
+  const agent = askClaude(workdir, prompt, logBase, `${pairName} · ${version} · ${task.id} · ${modelName} · run ${run}`);
+  git(workdir, 'add', '-A');
+  git(workdir, 'commit', '-q', '--allow-empty', '-m', `${task.id} (${version})`, '-m',
+    `model=${MODEL} wall_s=${agent.wall_s} total_tokens=${agent.total_tokens} cost_usd=${agent.cost_usd}`);
+  const diff = sh('git', ['diff', '--shortstat', base, 'HEAD'], workdir).stdout.trim();
+  const tests = runTests(workdir, task.tests);
+  const upstream = pair.upstreamTests ? runUpstreamTests(workdir, version) : {};
+  const row = { pair: pairName, model: MODEL, run, version, task: task.id, ...agent, diff, ...tests, ...upstream };
+  results.push(row);
+  const upstreamLine = pair.upstreamTests ? ` Upstream suite: ${upstream.upstream_ok ? 'pass' : 'FAIL'} (${upstream.upstream_passed} passed, ${upstream.upstream_failed} failed).` : '';
+  fs.appendFileSync(`${logBase}.md`, `\n## Outcome\n\nHidden tests: ${tests.passed}/${tests.passed + tests.failed} passed.${upstreamLine} ${diff}\n` +
+    tests.failing.map((t) => `- failed: ${t}\n`).join(''));
+  console.log(`#${run} ${version} ${task.id}: tests ${tests.passed}/${tests.passed + tests.failed}` +
+    `${pair.upstreamTests ? `, upstream ${upstream.upstream_ok ? 'ok' : 'FAIL'}` : ''}, ` +
+    `${agent.wall_s}s, ${agent.tool_calls} calls, ${agent.total_tokens} tokens, $${agent.cost_usd?.toFixed(3)}, ${diff}`);
+};
+const keep = (workdir, branch) => {
+  git(root, 'fetch', '-q', '--force', workdir, `main:exp/${modelName}/${pairName}/${branch}`);
   fs.rmSync(workdir, { recursive: true, force: true });
+};
+
+for (let run = 1; run <= runs; run++) for (const version of versions) {
+  if (pair.chained) {
+    const workdir = freshRepo(version);
+    for (const task of tasks) doTask(workdir, version, task, run);
+    keep(workdir, `${version}-${run}`);
+  } else {
+    for (const task of tasks) {
+      const workdir = freshRepo(version);
+      doTask(workdir, version, task, run);
+      keep(workdir, `${version}-${task.id}-${run}`);
+    }
+  }
 }
 
 const median = (xs) => [...xs].sort((a, b) => a - b)[Math.floor((xs.length - 1) / 2)];
-console.log('\nversion  change   passed  median s  median tokens  median $');
-for (const version of versions) for (const change of CHANGES) {
-  const rows = results.filter((r) => r.version === version && r.change === change);
-  const ok = rows.filter((r) => r.failed === 0).length;
-  console.log(`${version.padEnd(8)} ${change}  ${ok}/${rows.length}     ${String(median(rows.map((r) => r.wall_s))).padEnd(9)} ` +
+console.log('\nversion  task                    passed  median s  median tokens  median $');
+for (const version of versions) for (const task of tasks) {
+  const rows = results.filter((r) => r.version === version && r.task === task.id);
+  const ok = rows.filter((r) => r.failed === 0 && r.upstream_ok !== false).length;
+  console.log(`${version.padEnd(8)} ${task.id.padEnd(23)} ${ok}/${rows.length}     ${String(median(rows.map((r) => r.wall_s))).padEnd(9)} ` +
     `${String(median(rows.map((r) => r.total_tokens))).padEnd(14)} ${median(rows.map((r) => r.cost_usd ?? 0)).toFixed(3)}`);
 }
 

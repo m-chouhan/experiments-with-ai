@@ -1,0 +1,258 @@
+diff --git a/classes/semver.js b/classes/semver.js
+index 4f78463..e8c07a0 100644
+--- a/classes/semver.js
++++ b/classes/semver.js
+@@ -1,6 +1,7 @@
+ 'use strict'
+ 
+ const debug = require('../internal/debug')
++const naturalCompare = require('../internal/natural')
+ 
+ const NUM = '0|[1-9]\\d{0,256}'
+ const NUMLOOSE = '\\d{1,256}'
+@@ -212,6 +213,9 @@ class SemVer {
+         }
+         const xnum = /^[0-9]+$/.test(x)
+         const ynum = /^[0-9]+$/.test(y)
++        if (this.options.naturalPrerelease && !xnum && !ynum) {
++          return naturalCompare(x, y)
++        }
+         if (xnum && ynum) {
+           x = +x
+           y = +y
+diff --git a/functions/compare-build.js b/functions/compare-build.js
+index 7322095..c1737dd 100644
+--- a/functions/compare-build.js
++++ b/functions/compare-build.js
+@@ -1,6 +1,7 @@
+ 'use strict'
+ 
+ const SemVer = require('../classes/semver')
++const naturalCompare = require('../internal/natural')
+ 
+ const compareBuild = (a, b, loose) => {
+   const x = new SemVer(a, loose)
+@@ -43,6 +44,10 @@ const compareBuild = (a, b, loose) => {
+           p = +p
+           q = +q
+         }
++        if (x.options.naturalPrerelease && !pnum && !qnum) {
++          c = naturalCompare(p, q)
++          break
++        }
+         c = p === q ? 0 : (pnum && !qnum) ? -1 : (qnum && !pnum) ? 1 : p < q ? -1 : 1
+         break
+       }
+diff --git a/functions/compare.js b/functions/compare.js
+index 1e6c307..4dfd7fa 100644
+--- a/functions/compare.js
++++ b/functions/compare.js
+@@ -1,6 +1,7 @@
+ 'use strict'
+ 
+ const SemVer = require('../classes/semver')
++const naturalCompare = require('../internal/natural')
+ 
+ const compare = (a, b, loose) => {
+   const x = new SemVer(a, loose)
+@@ -43,6 +44,10 @@ const compare = (a, b, loose) => {
+           p = +p
+           q = +q
+         }
++        if (x.options.naturalPrerelease && !pnum && !qnum) {
++          c = naturalCompare(p, q)
++          break
++        }
+         c = p === q ? 0 : (pnum && !qnum) ? -1 : (qnum && !pnum) ? 1 : p < q ? -1 : 1
+         break
+       }
+diff --git a/functions/eq.js b/functions/eq.js
+index a0f90fa..15ba49c 100644
+--- a/functions/eq.js
++++ b/functions/eq.js
+@@ -1,6 +1,7 @@
+ 'use strict'
+ 
+ const SemVer = require('../classes/semver')
++const naturalCompare = require('../internal/natural')
+ 
+ const eq = (a, b, loose) => {
+   const x = new SemVer(a, loose)
+@@ -43,6 +44,10 @@ const eq = (a, b, loose) => {
+           p = +p
+           q = +q
+         }
++        if (x.options.naturalPrerelease && !pnum && !qnum) {
++          c = naturalCompare(p, q)
++          break
++        }
+         c = p === q ? 0 : (pnum && !qnum) ? -1 : (qnum && !pnum) ? 1 : p < q ? -1 : 1
+         break
+       }
+diff --git a/functions/gt.js b/functions/gt.js
+index b5447a6..abe86f5 100644
+--- a/functions/gt.js
++++ b/functions/gt.js
+@@ -1,6 +1,7 @@
+ 'use strict'
+ 
+ const SemVer = require('../classes/semver')
++const naturalCompare = require('../internal/natural')
+ 
+ const gt = (a, b, loose) => {
+   const x = new SemVer(a, loose)
+@@ -43,6 +44,10 @@ const gt = (a, b, loose) => {
+           p = +p
+           q = +q
+         }
++        if (x.options.naturalPrerelease && !pnum && !qnum) {
++          c = naturalCompare(p, q)
++          break
++        }
+         c = p === q ? 0 : (pnum && !qnum) ? -1 : (qnum && !pnum) ? 1 : p < q ? -1 : 1
+         break
+       }
+diff --git a/functions/gte.js b/functions/gte.js
+index e74ad72..259d9c7 100644
+--- a/functions/gte.js
++++ b/functions/gte.js
+@@ -1,6 +1,7 @@
+ 'use strict'
+ 
+ const SemVer = require('../classes/semver')
++const naturalCompare = require('../internal/natural')
+ 
+ const gte = (a, b, loose) => {
+   const x = new SemVer(a, loose)
+@@ -43,6 +44,10 @@ const gte = (a, b, loose) => {
+           p = +p
+           q = +q
+         }
++        if (x.options.naturalPrerelease && !pnum && !qnum) {
++          c = naturalCompare(p, q)
++          break
++        }
+         c = p === q ? 0 : (pnum && !qnum) ? -1 : (qnum && !pnum) ? 1 : p < q ? -1 : 1
+         break
+       }
+diff --git a/functions/lt.js b/functions/lt.js
+index 0189573..d65e86f 100644
+--- a/functions/lt.js
++++ b/functions/lt.js
+@@ -1,6 +1,7 @@
+ 'use strict'
+ 
+ const SemVer = require('../classes/semver')
++const naturalCompare = require('../internal/natural')
+ 
+ const lt = (a, b, loose) => {
+   const x = new SemVer(a, loose)
+@@ -43,6 +44,10 @@ const lt = (a, b, loose) => {
+           p = +p
+           q = +q
+         }
++        if (x.options.naturalPrerelease && !pnum && !qnum) {
++          c = naturalCompare(p, q)
++          break
++        }
+         c = p === q ? 0 : (pnum && !qnum) ? -1 : (qnum && !pnum) ? 1 : p < q ? -1 : 1
+         break
+       }
+diff --git a/functions/lte.js b/functions/lte.js
+index c063932..67caedd 100644
+--- a/functions/lte.js
++++ b/functions/lte.js
+@@ -1,6 +1,7 @@
+ 'use strict'
+ 
+ const SemVer = require('../classes/semver')
++const naturalCompare = require('../internal/natural')
+ 
+ const lte = (a, b, loose) => {
+   const x = new SemVer(a, loose)
+@@ -43,6 +44,10 @@ const lte = (a, b, loose) => {
+           p = +p
+           q = +q
+         }
++        if (x.options.naturalPrerelease && !pnum && !qnum) {
++          c = naturalCompare(p, q)
++          break
++        }
+         c = p === q ? 0 : (pnum && !qnum) ? -1 : (qnum && !pnum) ? 1 : p < q ? -1 : 1
+         break
+       }
+diff --git a/functions/neq.js b/functions/neq.js
+index 2d38d99..cadd528 100644
+--- a/functions/neq.js
++++ b/functions/neq.js
+@@ -1,6 +1,7 @@
+ 'use strict'
+ 
+ const SemVer = require('../classes/semver')
++const naturalCompare = require('../internal/natural')
+ 
+ const neq = (a, b, loose) => {
+   const x = new SemVer(a, loose)
+@@ -43,6 +44,10 @@ const neq = (a, b, loose) => {
+           p = +p
+           q = +q
+         }
++        if (x.options.naturalPrerelease && !pnum && !qnum) {
++          c = naturalCompare(p, q)
++          break
++        }
+         c = p === q ? 0 : (pnum && !qnum) ? -1 : (qnum && !pnum) ? 1 : p < q ? -1 : 1
+         break
+       }
+diff --git a/functions/rcompare.js b/functions/rcompare.js
+index e652133..7b9f86f 100644
+--- a/functions/rcompare.js
++++ b/functions/rcompare.js
+@@ -1,6 +1,7 @@
+ 'use strict'
+ 
+ const SemVer = require('../classes/semver')
++const naturalCompare = require('../internal/natural')
+ 
+ const rcompare = (b, a, loose) => {
+   const x = new SemVer(a, loose)
+@@ -43,6 +44,10 @@ const rcompare = (b, a, loose) => {
+           p = +p
+           q = +q
+         }
++        if (x.options.naturalPrerelease && !pnum && !qnum) {
++          c = naturalCompare(p, q)
++          break
++        }
+         c = p === q ? 0 : (pnum && !qnum) ? -1 : (qnum && !pnum) ? 1 : p < q ? -1 : 1
+         break
+       }
+diff --git a/internal/natural.js b/internal/natural.js
+new file mode 100644
+index 0000000..257fb83
+--- /dev/null
++++ b/internal/natural.js
+@@ -0,0 +1,23 @@
++'use strict'
++
++// natural order for alphanumeric identifiers: digit runs compare as numbers
++const naturalCompare = (a, b) => {
++  const ra = String(a).match(/\d+|\D+/g)
++  const rb = String(b).match(/\d+|\D+/g)
++  for (let i = 0; i < ra.length && i < rb.length; i++) {
++    if (ra[i] !== rb[i]) {
++      if (/^\d/.test(ra[i]) && /^\d/.test(rb[i]) && +ra[i] !== +rb[i]) {
++        return +ra[i] < +rb[i] ? -1 : 1
++      }
++      if (!/^\d/.test(ra[i]) || !/^\d/.test(rb[i])) {
++        return ra[i] < rb[i] ? -1 : 1
++      }
++    }
++  }
++  if (ra.length !== rb.length) {
++    return ra.length < rb.length ? -1 : 1
++  }
++  return a === b ? 0 : a < b ? -1 : 1
++}
++
++module.exports = naturalCompare

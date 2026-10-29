@@ -1,0 +1,57 @@
+diff --git a/classes/range.js b/classes/range.js
+index 403f21f..2037804 100644
+--- a/classes/range.js
++++ b/classes/range.js
+@@ -456,6 +456,10 @@ class Range {
+             }
+           }
+         }
++        // prereleases tagged in options.prereleaseTags are allowed within the bounds
++        if (this.options.prereleaseTags && this.options.prereleaseTags.includes(version.prerelease[0])) {
++          return true
++        }
+         // Version has a -pre, but it's not one of the ones we like.
+         continue
+       }
+diff --git a/functions/satisfies.js b/functions/satisfies.js
+index 27ce13f..67c170e 100644
+--- a/functions/satisfies.js
++++ b/functions/satisfies.js
+@@ -42,6 +42,9 @@ const satisfies = (version, range, options) => {
+             break
+           }
+         }
++        if (!pass && range.options.prereleaseTags && range.options.prereleaseTags.includes(sv.prerelease[0])) {
++          pass = true
++        }
+       }
+       ok = pass
+     }
+diff --git a/ranges/max-satisfying.js b/ranges/max-satisfying.js
+index 2c3fe91..0b06917 100644
+--- a/ranges/max-satisfying.js
++++ b/ranges/max-satisfying.js
+@@ -46,6 +46,9 @@ const maxSatisfying = (versions, range, options) => {
+               break
+             }
+           }
++          if (!pass && rangeObj.options.prereleaseTags && rangeObj.options.prereleaseTags.includes(sv.prerelease[0])) {
++            pass = true
++          }
+         }
+         ok = pass
+       }
+diff --git a/ranges/min-satisfying.js b/ranges/min-satisfying.js
+index 8ccd0a4..9421384 100644
+--- a/ranges/min-satisfying.js
++++ b/ranges/min-satisfying.js
+@@ -46,6 +46,9 @@ const minSatisfying = (versions, range, options) => {
+               break
+             }
+           }
++          if (!pass && rangeObj.options.prereleaseTags && rangeObj.options.prereleaseTags.includes(sv.prerelease[0])) {
++            pass = true
++          }
+         }
+         ok = pass
+       }

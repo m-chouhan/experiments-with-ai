@@ -1,0 +1,16 @@
+diff --git a/classes/range.js b/classes/range.js
+index a7d6556..045c827 100644
+--- a/classes/range.js
++++ b/classes/range.js
+@@ -569,6 +569,11 @@ const testSet = (set, version, options) => {
+       }
+     }
+ 
++    // prereleases tagged in options.prereleaseTags are allowed within the bounds
++    if (options.prereleaseTags && options.prereleaseTags.includes(version.prerelease[0])) {
++      return true
++    }
++
+     // Version has a -pre, but it's not one of the ones we like.
+     return false
+   }

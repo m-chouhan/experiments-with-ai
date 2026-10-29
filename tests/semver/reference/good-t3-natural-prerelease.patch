@@ -1,0 +1,58 @@
+diff --git a/classes/semver.js b/classes/semver.js
+index 5438127..58b9a45 100644
+--- a/classes/semver.js
++++ b/classes/semver.js
+@@ -176,7 +176,7 @@ class SemVer {
+       } else if (a === b) {
+         continue
+       } else {
+-        return compareIdentifiers(a, b)
++        return compareIdentifiers(a, b, this.options.naturalPrerelease)
+       }
+     } while (++i)
+   }
+diff --git a/internal/identifiers.js b/internal/identifiers.js
+index d053472..47a022c 100644
+--- a/internal/identifiers.js
++++ b/internal/identifiers.js
+@@ -1,7 +1,28 @@
+ 'use strict'
+ 
+ const numeric = /^[0-9]+$/
+-const compareIdentifiers = (a, b) => {
++
++// natural order for alphanumeric identifiers: digit runs compare as numbers
++const naturalCompare = (a, b) => {
++  const ra = String(a).match(/\d+|\D+/g)
++  const rb = String(b).match(/\d+|\D+/g)
++  for (let i = 0; i < ra.length && i < rb.length; i++) {
++    if (ra[i] !== rb[i]) {
++      if (/^\d/.test(ra[i]) && /^\d/.test(rb[i]) && +ra[i] !== +rb[i]) {
++        return +ra[i] < +rb[i] ? -1 : 1
++      }
++      if (!/^\d/.test(ra[i]) || !/^\d/.test(rb[i])) {
++        return ra[i] < rb[i] ? -1 : 1
++      }
++    }
++  }
++  if (ra.length !== rb.length) {
++    return ra.length < rb.length ? -1 : 1
++  }
++  return a === b ? 0 : a < b ? -1 : 1
++}
++
++const compareIdentifiers = (a, b, natural) => {
+   if (typeof a === 'number' && typeof b === 'number') {
+     return a === b ? 0 : a < b ? -1 : 1
+   }
+@@ -14,6 +35,10 @@ const compareIdentifiers = (a, b) => {
+     b = +b
+   }
+ 
++  if (natural && !anum && !bnum) {
++    return naturalCompare(a, b)
++  }
++
+   return a === b ? 0
+     : (anum && !bnum) ? -1
+     : (bnum && !anum) ? 1

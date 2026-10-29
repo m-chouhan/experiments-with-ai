@@ -1,0 +1,65 @@
+diff --git a/classes/comparator.js b/classes/comparator.js
+index fd722fc..9c27163 100644
+--- a/classes/comparator.js
++++ b/classes/comparator.js
+@@ -8,8 +8,8 @@ const PREIDLOOSE = '(?:' + NONNUM + '|' + NUMLOOSE + ')'
+ const PRE = '(?:-(' + PREID + '(?:\\.' + PREID + ')*))'
+ const PRELOOSE = '(?:-?(' + PREIDLOOSE + '(?:\\.' + PREIDLOOSE + ')*))'
+ const BUILD = '(?:\\+([a-zA-Z0-9-]{1,250}(?:\\.[a-zA-Z0-9-]{1,250})*))'
+-const FULLPLAIN = 'v?(' + NUM + ')\\.(' + NUM + ')\\.(' + NUM + ')' + PRE + '?' + BUILD + '?'
+-const LOOSEPLAIN = '[v=\\s]*(' + NUMLOOSE + ')\\.(' + NUMLOOSE + ')\\.(' + NUMLOOSE + ')' + PRELOOSE + '?' + BUILD + '?'
++const FULLPLAIN = '[vV]?(' + NUM + ')\\.(' + NUM + ')\\.(' + NUM + ')' + PRE + '?' + BUILD + '?'
++const LOOSEPLAIN = '[vV=\\s]*(' + NUMLOOSE + ')\\.(' + NUMLOOSE + ')\\.(' + NUMLOOSE + ')' + PRELOOSE + '?' + BUILD + '?'
+ 
+ const COMPARATOR_RE = new RegExp('^((?:<|>)?=?)\\s{0,1}(' + FULLPLAIN + ')$|^$')
+ const COMPARATORLOOSE_RE = new RegExp('^((?:<|>)?=?)\\s{0,1}(' + LOOSEPLAIN + ')$|^$')
+diff --git a/classes/range.js b/classes/range.js
+index 403f21f..e11ec98 100644
+--- a/classes/range.js
++++ b/classes/range.js
+@@ -8,13 +8,13 @@ const PREIDLOOSE = '(?:' + NONNUM + '|' + NUMLOOSE + ')'
+ const PRE = '(?:-(' + PREID + '(?:\\.' + PREID + ')*))'
+ const PRELOOSE = '(?:-?(' + PREIDLOOSE + '(?:\\.' + PREIDLOOSE + ')*))'
+ const BUILD = '(?:\\+([a-zA-Z0-9-]{1,250}(?:\\.[a-zA-Z0-9-]{1,250})*))'
+-const FULLPLAIN = 'v?(' + NUM + ')\\.(' + NUM + ')\\.(' + NUM + ')' + PRE + '?' + BUILD + '?'
+-const LOOSEPLAIN = '[v=\\s]*(' + NUMLOOSE + ')\\.(' + NUMLOOSE + ')\\.(' + NUMLOOSE + ')' + PRELOOSE + '?' + BUILD + '?'
++const FULLPLAIN = '[vV]?(' + NUM + ')\\.(' + NUM + ')\\.(' + NUM + ')' + PRE + '?' + BUILD + '?'
++const LOOSEPLAIN = '[vV=\\s]*(' + NUMLOOSE + ')\\.(' + NUMLOOSE + ')\\.(' + NUMLOOSE + ')' + PRELOOSE + '?' + BUILD + '?'
+ 
+ const XID = NUM + '|x|X|\\*'
+ const XIDLOOSE = NUMLOOSE + '|x|X|\\*'
+-const XRANGEPLAIN = '[v=\\s]*(' + XID + ')(?:\\.(' + XID + ')(?:\\.(' + XID + ')(?:' + PRE + ')?' + BUILD + '?)?)?'
+-const XRANGEPLAINLOOSE = '[v=\\s]*(' + XIDLOOSE + ')(?:\\.(' + XIDLOOSE + ')(?:\\.(' + XIDLOOSE + ')(?:' + PRELOOSE + ')?' + BUILD + '?)?)?'
++const XRANGEPLAIN = '[vV=\\s]*(' + XID + ')(?:\\.(' + XID + ')(?:\\.(' + XID + ')(?:' + PRE + ')?' + BUILD + '?)?)?'
++const XRANGEPLAINLOOSE = '[vV=\\s]*(' + XIDLOOSE + ')(?:\\.(' + XIDLOOSE + ')(?:\\.(' + XIDLOOSE + ')(?:' + PRELOOSE + ')?' + BUILD + '?)?)?'
+ 
+ const HYPHEN_RE = new RegExp('^\\s{0,1}(' + XRANGEPLAIN + ')\\s{1,1}-\\s{1,1}(' + XRANGEPLAIN + ')\\s{0,1}$')
+ const HYPHENLOOSE_RE = new RegExp('^\\s{0,1}(' + XRANGEPLAINLOOSE + ')\\s{1,1}-\\s{1,1}(' + XRANGEPLAINLOOSE + ')\\s{0,1}$')
+diff --git a/classes/semver.js b/classes/semver.js
+index 4f78463..a2a9957 100644
+--- a/classes/semver.js
++++ b/classes/semver.js
+@@ -10,8 +10,8 @@ const PREIDLOOSE = '(?:' + NONNUM + '|' + NUMLOOSE + ')'
+ const PRE = '(?:-(' + PREID + '(?:\\.' + PREID + ')*))'
+ const PRELOOSE = '(?:-?(' + PREIDLOOSE + '(?:\\.' + PREIDLOOSE + ')*))'
+ const BUILD = '(?:\\+([a-zA-Z0-9-]{1,250}(?:\\.[a-zA-Z0-9-]{1,250})*))'
+-const FULLPLAIN = 'v?(' + NUM + ')\\.(' + NUM + ')\\.(' + NUM + ')' + PRE + '?' + BUILD + '?'
+-const LOOSEPLAIN = '[v=\\s]*(' + NUMLOOSE + ')\\.(' + NUMLOOSE + ')\\.(' + NUMLOOSE + ')' + PRELOOSE + '?' + BUILD + '?'
++const FULLPLAIN = '[vV]?(' + NUM + ')\\.(' + NUM + ')\\.(' + NUM + ')' + PRE + '?' + BUILD + '?'
++const LOOSEPLAIN = '[vV=\\s]*(' + NUMLOOSE + ')\\.(' + NUMLOOSE + ')\\.(' + NUMLOOSE + ')' + PRELOOSE + '?' + BUILD + '?'
+ 
+ const FULL_RE = new RegExp('^' + FULLPLAIN + '$')
+ const LOOSE_RE = new RegExp('^' + LOOSEPLAIN + '$')
+diff --git a/functions/clean.js b/functions/clean.js
+index 79703d6..450dc58 100644
+--- a/functions/clean.js
++++ b/functions/clean.js
+@@ -2,7 +2,7 @@
+ 
+ const parse = require('./parse')
+ const clean = (version, options) => {
+-  const s = parse(version.trim().replace(/^[=v]+/, ''), options)
++  const s = parse(version.trim().replace(/^[=vV]+/, ''), options)
+   return s ? s.version : null
+ }
+ module.exports = clean

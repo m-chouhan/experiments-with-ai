@@ -1,0 +1,39 @@
+diff --git a/classes/range.js b/classes/range.js
+index 403f21f..086d60f 100644
+--- a/classes/range.js
++++ b/classes/range.js
+@@ -23,6 +23,8 @@ const TILDETRIM_RE = /(\s{0,1})(?:~>?)\s{1,1}/g
+ const CARETTRIM_RE = /(\s{0,1})(?:\^)\s{1,1}/g
+ const TILDE_RE = new RegExp('^(?:~>?)' + XRANGEPLAIN + '$')
+ const TILDELOOSE_RE = new RegExp('^(?:~>?)' + XRANGEPLAINLOOSE + '$')
++const COMPAT_RE = new RegExp('^~=' + XRANGEPLAIN + '$')
++const COMPATLOOSE_RE = new RegExp('^~=' + XRANGEPLAINLOOSE + '$')
+ const CARET_RE = new RegExp('^(?:\\^)' + XRANGEPLAIN + '$')
+ const CARETLOOSE_RE = new RegExp('^(?:\\^)' + XRANGEPLAINLOOSE + '$')
+ const XRANGE_RE = new RegExp('^((?:<|>)?=?)\\s{0,1}' + XRANGEPLAIN + '$')
+@@ -240,6 +242,25 @@ class Range {
+         return ret
+       })).join(' ')
+ 
++      // ~=1, ~=1.x --> >=1.0.0 <2.0.0-0
++      // ~=1.2, ~=1.2.x --> >=1.2.0 <2.0.0-0
++      // ~=1.2.3 --> >=1.2.3 <1.3.0-0
++      comp = comp.trim().split(/\s+/).map((c) => c.replace(loose ? COMPATLOOSE_RE : COMPAT_RE, (_, M, m, p, pr) => {
++        let ret
++        if (!M || M.toLowerCase() === 'x' || M === '*') {
++          ret = ''
++        } else if (!m || m.toLowerCase() === 'x' || m === '*') {
++          ret = `>=${M}.0.0${z} <${+M + 1}.0.0-0`
++        } else if (!p || p.toLowerCase() === 'x' || p === '*') {
++          ret = `>=${M}.${m}.0${z} <${+M + 1}.0.0-0`
++        } else if (pr) {
++          ret = `>=${M}.${m}.${p}-${pr} <${M}.${+m + 1}.0-0`
++        } else {
++          ret = `>=${M}.${m}.${p} <${M}.${+m + 1}.0-0`
++        }
++        return ret
++      })).join(' ')
++
+       // ~, ~> --> * (any, kinda silly)
+       // ~2, ~2.x, ~2.x.x, ~>2, ~>2.x ~>2.x.x --> >=2.0.0 <3.0.0-0
+       // ~2.0, ~2.0.x, ~>2.0, ~>2.0.x --> >=2.0.0 <2.1.0-0
