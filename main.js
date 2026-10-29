@@ -18,12 +18,14 @@ const COMMANDS = {
   park: { args: ['plate', 'type'], run: (cli, plate, type) => cli.park(plate, type) },
   leave: { args: ['plate', 'hours'], run: (cli, plate, hours) => cli.charge('leave', plate, hours) },
   quote: { args: ['plate', 'hours'], run: (cli, plate, hours) => cli.charge('quote', plate, hours) },
+  pass: { args: ['plate'], run: (cli, plate) => cli.pass(plate) },
 };
 
 class ParkingLot {
   constructor(spots) {
     this.spots = spots;
     this.tickets = new Map();
+    this.passes = new Set();
   }
 
   park(plate, type) {
@@ -61,12 +63,21 @@ class ParkingLot {
 }
 
 class Pricing {
+  constructor(passes) {
+    this.passes = passes;
+  }
+
   fee(ticket, hours) {
+    hours = Math.min(hours, 8);
     let rate = VEHICLES[ticket.type].rate;
     if (ticket.charging && VEHICLES[ticket.type].chargeRate) {
       rate += VEHICLES[ticket.type].chargeRate;
     }
-    return rate * hours;
+    let fee = rate * hours;
+    if (this.passes.has(ticket.plate)) {
+      fee = fee / 2;
+    }
+    return fee;
   }
 }
 
@@ -100,9 +111,15 @@ class Cli {
     this.lot.leave(plate);
     return `LEFT ${plate} ${ticket.spot} FEE ${fee}`;
   }
+
+  pass(plate) {
+    this.lot.passes.add(plate);
+    return `PASS ${plate}`;
+  }
 }
 
-const cli = new Cli(new ParkingLot(SPOTS), new Pricing());
+const lot = new ParkingLot(SPOTS);
+const cli = new Cli(lot, new Pricing(lot.passes));
 for (const line of fs.readFileSync(0, 'utf8').split('\n')) {
   if (line.trim()) console.log(cli.handle(line));
 }
