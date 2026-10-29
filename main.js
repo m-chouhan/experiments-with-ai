@@ -3,6 +3,7 @@ const fs = require('fs');
 const smallSpots = ['S1', 'S2'];
 const mediumSpots = ['M1', 'M2', 'M3'];
 const largeSpots = ['L1'];
+const chargingSpots = ['C1', 'C2'];
 
 let parked = {};
 let usedSpots = [];
@@ -13,6 +14,7 @@ function park(plate, type) {
     return;
   }
   let spot = null;
+  let isCharging = false;
   if (type === 'bike') {
     for (const s of smallSpots) if (!spot && !usedSpots.includes(s)) spot = s;
     for (const s of mediumSpots) if (!spot && !usedSpots.includes(s)) spot = s;
@@ -21,6 +23,10 @@ function park(plate, type) {
     for (const s of mediumSpots) if (!spot && !usedSpots.includes(s)) spot = s;
     for (const s of largeSpots) if (!spot && !usedSpots.includes(s)) spot = s;
   } else if (type === 'truck') {
+    for (const s of largeSpots) if (!spot && !usedSpots.includes(s)) spot = s;
+  } else if (type === 'ev') {
+    for (const s of chargingSpots) if (!spot && !usedSpots.includes(s)) { spot = s; isCharging = true; }
+    for (const s of mediumSpots) if (!spot && !usedSpots.includes(s)) spot = s;
     for (const s of largeSpots) if (!spot && !usedSpots.includes(s)) spot = s;
   } else {
     console.log('INVALID');
@@ -31,7 +37,7 @@ function park(plate, type) {
     return;
   }
   usedSpots.push(spot);
-  parked[plate] = { type: type, spot: spot };
+  parked[plate] = { type: type, spot: spot, isCharging: isCharging };
   console.log('PARKED ' + plate + ' ' + spot);
 }
 
@@ -50,6 +56,7 @@ function leave(plate, hoursText) {
   if (type === 'bike') fee = hours * 10;
   else if (type === 'car') fee = hours * 20;
   else if (type === 'truck') fee = hours * 50;
+  else if (type === 'ev') fee = hours * 20 + (parked[plate].isCharging ? hours * 10 : 0);
   const spot = parked[plate].spot;
   usedSpots = usedSpots.filter((s) => s !== spot);
   delete parked[plate];
@@ -71,6 +78,7 @@ function quote(plate, hoursText) {
   if (type === 'bike') fee = hours * 10;
   else if (type === 'car') fee = hours * 20;
   else if (type === 'truck') fee = hours * 50;
+  else if (type === 'ev') fee = hours * 20 + (parked[plate].isCharging ? hours * 10 : 0);
   console.log('QUOTE ' + plate + ' FEE ' + fee);
 }
 
