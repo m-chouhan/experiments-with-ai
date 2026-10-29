@@ -4,12 +4,14 @@ const VEHICLES = {
   bike: { rate: 10, fits: ['small', 'medium', 'large'] },
   car: { rate: 20, fits: ['medium', 'large'] },
   truck: { rate: 50, fits: ['large'] },
+  ev: { rate: 20, fits: ['medium', 'large'] },
 };
 
 const SPOTS = [
   { id: 'S1', size: 'small' }, { id: 'S2', size: 'small' },
   { id: 'M1', size: 'medium' }, { id: 'M2', size: 'medium' }, { id: 'M3', size: 'medium' },
   { id: 'L1', size: 'large' },
+  { id: 'C1', charging: true }, { id: 'C2', charging: true },
 ];
 
 class ParkingLot {
@@ -20,6 +22,19 @@ class ParkingLot {
 
   park(plate, type) {
     const taken = new Set([...this.tickets.values()].map((t) => t.spot));
+
+    // EVs prioritize charging spots (C1 first, then C2)
+    if (type === 'ev') {
+      for (const spotId of ['C1', 'C2']) {
+        if (!taken.has(spotId)) {
+          const ticket = { plate, type, spot: spotId };
+          this.tickets.set(plate, ticket);
+          return ticket;
+        }
+      }
+    }
+
+    // Try regular spots by size preference
     for (const size of VEHICLES[type].fits) {
       const spot = this.spots.find((s) => s.size === size && !taken.has(s.id));
       if (spot) {
@@ -44,7 +59,12 @@ class ParkingLot {
 
 class Pricing {
   fee(ticket, hours) {
-    return VEHICLES[ticket.type].rate * hours;
+    let baseFee = VEHICLES[ticket.type].rate * hours;
+    // EVs in charging spots pay an additional charging fee
+    if (ticket.type === 'ev' && (ticket.spot === 'C1' || ticket.spot === 'C2')) {
+      baseFee += 10 * hours;
+    }
+    return baseFee;
   }
 }
 
