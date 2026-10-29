@@ -3,6 +3,7 @@ const fs = require('fs');
 const smallSpots = ['S1', 'S2'];
 const mediumSpots = ['M1', 'M2', 'M3'];
 const largeSpots = ['L1'];
+const chargingSpots = ['C1', 'C2'];
 
 let parked = {};
 let usedSpots = [];
@@ -13,7 +14,15 @@ function park(plate, type) {
     return;
   }
   let spot = null;
-  if (type === 'bike') {
+  if (type === 'ev') {
+    // EVs first try charging spots (C1 before C2)
+    for (const s of chargingSpots) if (!spot && !usedSpots.includes(s)) spot = s;
+    // If no charging spot available, try regular car spots
+    if (!spot) {
+      for (const s of mediumSpots) if (!spot && !usedSpots.includes(s)) spot = s;
+      for (const s of largeSpots) if (!spot && !usedSpots.includes(s)) spot = s;
+    }
+  } else if (type === 'bike') {
     for (const s of smallSpots) if (!spot && !usedSpots.includes(s)) spot = s;
     for (const s of mediumSpots) if (!spot && !usedSpots.includes(s)) spot = s;
     for (const s of largeSpots) if (!spot && !usedSpots.includes(s)) spot = s;
@@ -46,11 +55,17 @@ function leave(plate, hoursText) {
     return;
   }
   const type = parked[plate].type;
+  const spot = parked[plate].spot;
   let fee = 0;
   if (type === 'bike') fee = hours * 10;
   else if (type === 'car') fee = hours * 20;
   else if (type === 'truck') fee = hours * 50;
-  const spot = parked[plate].spot;
+  else if (type === 'ev') {
+    fee = hours * 20; // base car rate
+    if (chargingSpots.includes(spot)) {
+      fee += hours * 10; // charging fee
+    }
+  }
   usedSpots = usedSpots.filter((s) => s !== spot);
   delete parked[plate];
   console.log('LEFT ' + plate + ' ' + spot + ' FEE ' + fee);
@@ -67,10 +82,17 @@ function quote(plate, hoursText) {
     return;
   }
   const type = parked[plate].type;
+  const spot = parked[plate].spot;
   let fee = 0;
   if (type === 'bike') fee = hours * 10;
   else if (type === 'car') fee = hours * 20;
   else if (type === 'truck') fee = hours * 50;
+  else if (type === 'ev') {
+    fee = hours * 20; // base car rate
+    if (chargingSpots.includes(spot)) {
+      fee += hours * 10; // charging fee
+    }
+  }
   console.log('QUOTE ' + plate + ' FEE ' + fee);
 }
 
