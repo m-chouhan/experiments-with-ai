@@ -7,6 +7,7 @@ const chargingSpots = ['C1', 'C2'];
 
 let parked = {};
 let usedSpots = [];
+let passes = {};
 
 function park(plate, type) {
   if (parked[plate]) {
@@ -41,6 +42,22 @@ function park(plate, type) {
   console.log('PARKED ' + plate + ' ' + spot);
 }
 
+function pass(plate) {
+  passes[plate] = true;
+  console.log('PASS ' + plate);
+}
+
+function calculateFee(plate, hours, type, isCharging) {
+  const cappedHours = Math.min(hours, 8);
+  let fee = 0;
+  if (type === 'bike') fee = cappedHours * 10;
+  else if (type === 'car') fee = cappedHours * 20;
+  else if (type === 'truck') fee = cappedHours * 50;
+  else if (type === 'ev') fee = cappedHours * 20 + (isCharging ? cappedHours * 10 : 0);
+  if (passes[plate]) fee = Math.floor(fee / 2);
+  return fee;
+}
+
 function leave(plate, hoursText) {
   const hours = Number(hoursText);
   if (!Number.isInteger(hours) || hours < 1) {
@@ -52,11 +69,7 @@ function leave(plate, hoursText) {
     return;
   }
   const type = parked[plate].type;
-  let fee = 0;
-  if (type === 'bike') fee = hours * 10;
-  else if (type === 'car') fee = hours * 20;
-  else if (type === 'truck') fee = hours * 50;
-  else if (type === 'ev') fee = hours * 20 + (parked[plate].isCharging ? hours * 10 : 0);
+  const fee = calculateFee(plate, hours, type, parked[plate].isCharging);
   const spot = parked[plate].spot;
   usedSpots = usedSpots.filter((s) => s !== spot);
   delete parked[plate];
@@ -74,11 +87,7 @@ function quote(plate, hoursText) {
     return;
   }
   const type = parked[plate].type;
-  let fee = 0;
-  if (type === 'bike') fee = hours * 10;
-  else if (type === 'car') fee = hours * 20;
-  else if (type === 'truck') fee = hours * 50;
-  else if (type === 'ev') fee = hours * 20 + (parked[plate].isCharging ? hours * 10 : 0);
+  const fee = calculateFee(plate, hours, type, parked[plate].isCharging);
   console.log('QUOTE ' + plate + ' FEE ' + fee);
 }
 
@@ -89,5 +98,6 @@ for (const line of lines) {
   if (parts[0] === 'park' && parts.length === 3) park(parts[1], parts[2]);
   else if (parts[0] === 'leave' && parts.length === 3) leave(parts[1], parts[2]);
   else if (parts[0] === 'quote' && parts.length === 3) quote(parts[1], parts[2]);
+  else if (parts[0] === 'pass' && parts.length === 2) pass(parts[1]);
   else console.log('INVALID');
 }
