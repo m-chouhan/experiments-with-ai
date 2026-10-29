@@ -1,9 +1,0 @@
-pass ABC123
-park ABC123 car
-quote ABC123 8
-quote ABC123 10
-leave ABC123 10
-park XYZ789 car
-quote XYZ789 8
-quote XYZ789 10
-leave XYZ789 10
