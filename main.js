@@ -4,12 +4,16 @@ const VEHICLES = {
   bike: { rate: 10, fits: ['small', 'medium', 'large'] },
   car: { rate: 20, fits: ['medium', 'large'] },
   truck: { rate: 50, fits: ['large'] },
+  ev: { rate: 20, fits: ['charging', 'medium', 'large'] },
 };
+
+const CHARGING_RATE = 10;
 
 const SPOTS = [
   { id: 'S1', size: 'small' }, { id: 'S2', size: 'small' },
   { id: 'M1', size: 'medium' }, { id: 'M2', size: 'medium' }, { id: 'M3', size: 'medium' },
   { id: 'L1', size: 'large' },
+  { id: 'C1', size: 'charging' }, { id: 'C2', size: 'charging' },
 ];
 
 class ParkingLot {
@@ -23,7 +27,7 @@ class ParkingLot {
     for (const size of VEHICLES[type].fits) {
       const spot = this.spots.find((s) => s.size === size && !taken.has(s.id));
       if (spot) {
-        const ticket = { plate, type, spot: spot.id };
+        const ticket = { plate, type, spot: spot.id, size: spot.size };
         this.tickets.set(plate, ticket);
         return ticket;
       }
@@ -44,7 +48,8 @@ class ParkingLot {
 
 class Pricing {
   fee(ticket, hours) {
-    return VEHICLES[ticket.type].rate * hours;
+    const charging = ticket.size === 'charging' ? CHARGING_RATE : 0;
+    return (VEHICLES[ticket.type].rate + charging) * hours;
   }
 }
 
