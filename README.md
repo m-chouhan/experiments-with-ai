@@ -23,6 +23,11 @@ semver.lt('1.2.3', '9.8.7') // true
 semver.minVersion('>=1.0.0') // '1.0.0'
 semver.valid(semver.coerce('v2')) // '2.0.0'
 semver.valid(semver.coerce('42.6.7.9.3-alpha')) // '42.6.7'
+
+// Allow specific prerelease tags to match ranges
+semver.satisfies('1.3.0-rc.1', '^1.2.0', { prereleaseTags: ['rc'] }) // true
+semver.satisfies('1.3.0-beta.1', '^1.2.0', { prereleaseTags: ['rc'] }) // false
+semver.maxSatisfying(['1.3.0-rc.1', '1.3.0-beta.1', '1.3.0'], '^1.2.0', { prereleaseTags: ['rc'] }) // '1.3.0'
 ```
 
 You can also just load the module for the function that you care about if
@@ -428,6 +433,12 @@ are:
   behavior](https://github.com/npm/node-semver#prerelease-tags) of
   excluding prerelease tagged versions from ranges unless they are
   explicitly opted into.
+- `prereleaseTags`: An array of prerelease tag strings that are allowed
+  to match within ranges even when `includePrerelease` is not set. When
+  a prerelease version's first identifier is in this array, it will
+  satisfy the range if it falls within the range's bounds. For example,
+  with `prereleaseTags: ['rc']`, the version `1.3.0-rc.1` will satisfy
+  the range `^1.2.0`, but `1.3.0-beta.1` will not.
 
 Strict-mode Comparators and Ranges will be strict about the SemVer
 strings that they parse.
