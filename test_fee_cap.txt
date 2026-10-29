@@ -1,0 +1,10 @@
+park CAR1 car
+quote CAR1 6
+quote CAR1 8
+quote CAR1 12
+quote CAR1 24
+pass CAR1
+quote CAR1 6
+quote CAR1 8
+quote CAR1 12
+leave CAR1 20

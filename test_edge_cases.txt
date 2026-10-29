@@ -1,0 +1,14 @@
+pass TEST1
+pass TEST1
+park TEST1 bike
+leave TEST1 8
+park TEST2 bike
+pass TEST2
+quote TEST2 8
+quote TEST2 15
+leave TEST2 15
+pass UNKNOWN
+quote UNKNOWN 5
+invalid command
+pass
+pass TEST3 extra

@@ -18,6 +18,7 @@ const COMMANDS = {
   park: { args: ['plate', 'type'], run: (cli, plate, type) => cli.park(plate, type) },
   leave: { args: ['plate', 'hours'], run: (cli, plate, hours) => cli.leave(plate, hours) },
   quote: { args: ['plate', 'hours'], run: (cli, plate, hours) => cli.quote(plate, hours) },
+  pass: { args: ['plate'], run: (cli, plate) => cli.pass(plate) },
 };
 
 class ParkingLot {
@@ -63,20 +64,36 @@ class ParkingLot {
 }
 
 class Pricing {
+  constructor(passes) {
+    this.passes = passes;
+  }
+
   fee(ticket, hours) {
-    let baseFee = VEHICLES[ticket.type].rate * hours;
+    // Cap at 8 hours
+    const cappedHours = Math.min(hours, 8);
+    let baseFee = VEHICLES[ticket.type].rate * cappedHours;
     // Add charging fee if EV is in a charging spot
     if (ticket.charging) {
-      baseFee += 10 * hours;
+      baseFee += 10 * cappedHours;
     }
     return baseFee;
+  }
+
+  feeWithPass(plate, ticket, hours) {
+    let totalFee = this.fee(ticket, hours);
+    // Apply 50% discount if vehicle has a pass
+    if (this.passes.has(plate)) {
+      totalFee = Math.floor(totalFee / 2);
+    }
+    return totalFee;
   }
 }
 
 class Cli {
-  constructor(lot, pricing) {
+  constructor(lot, pricing, passes) {
     this.lot = lot;
     this.pricing = pricing;
+    this.passes = passes;
   }
 
   handle(line) {
@@ -110,11 +127,17 @@ class Cli {
     if (!Number.isInteger(hours) || hours < 1) return { error: 'INVALID' };
     const ticket = this.lot.find(plate);
     if (!ticket) return { error: `NOT FOUND ${plate}` };
-    return { ticket, fee: this.pricing.fee(ticket, hours) };
+    return { ticket, fee: this.pricing.feeWithPass(plate, ticket, hours) };
+  }
+
+  pass(plate) {
+    this.passes.add(plate);
+    return `PASS ${plate}`;
   }
 }
 
-const cli = new Cli(new ParkingLot(SPOTS), new Pricing());
+const passes = new Set();
+const cli = new Cli(new ParkingLot(SPOTS), new Pricing(passes), passes);
 for (const raw of fs.readFileSync(0, 'utf8').split('\n')) {
   const line = raw.trim();
   if (line) console.log(cli.handle(line));
