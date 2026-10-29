@@ -20,9 +20,12 @@ const HYPHEN_RE = new RegExp('^\\s{0,1}(' + XRANGEPLAIN + ')\\s{1,1}-\\s{1,1}(' 
 const HYPHENLOOSE_RE = new RegExp('^\\s{0,1}(' + XRANGEPLAINLOOSE + ')\\s{1,1}-\\s{1,1}(' + XRANGEPLAINLOOSE + ')\\s{0,1}$')
 const COMPTRIM_RE = new RegExp('(\\s{0,1})((?:<|>)?=?)\\s{0,1}(' + LOOSEPLAIN + '|' + XRANGEPLAIN + ')', 'g')
 const TILDETRIM_RE = /(\s{0,1})(?:~>?)\s{1,1}/g
+const COMPATIBLERELEASETRIM_RE = /(\s{0,1})(?:~=)\s{0,1}/g
 const CARETTRIM_RE = /(\s{0,1})(?:\^)\s{1,1}/g
 const TILDE_RE = new RegExp('^(?:~>?)' + XRANGEPLAIN + '$')
 const TILDELOOSE_RE = new RegExp('^(?:~>?)' + XRANGEPLAINLOOSE + '$')
+const COMPATIBLERELEASE_RE = new RegExp('^(?:~=)' + XRANGEPLAIN + '$')
+const COMPATIBLERELEASELOOSE_RE = new RegExp('^(?:~=)' + XRANGEPLAINLOOSE + '$')
 const CARET_RE = new RegExp('^(?:\\^)' + XRANGEPLAIN + '$')
 const CARETLOOSE_RE = new RegExp('^(?:\\^)' + XRANGEPLAINLOOSE + '$')
 const XRANGE_RE = new RegExp('^((?:<|>)?=?)\\s{0,1}' + XRANGEPLAIN + '$')
@@ -186,6 +189,8 @@ class Range {
     range = range.replace(COMPTRIM_RE, '$1$2$3')
     // `~ 1.2.3` => `~1.2.3`
     range = range.replace(TILDETRIM_RE, '$1~')
+    // `~= 1.2.3` => `~=1.2.3`
+    range = range.replace(COMPATIBLERELEASETRIM_RE, '$1~=')
     // `^ 1.2.3` => `^1.2.3`
     range = range.replace(CARETTRIM_RE, '$1^')
 
@@ -236,6 +241,31 @@ class Range {
           } else {
             ret = `>=${M}.${m}.${p} <${+M + 1}.0.0-0`
           }
+        }
+        return ret
+      })).join(' ')
+
+      // ~=1, ~=1.2, ~=1.2.3 - compatible release
+      // ~=1 := >=1.0.0 <2.0.0-0
+      // ~=1.2 := >=1.2.0 <2.0.0-0
+      // ~=1.2.3 := >=1.2.3 <1.3.0-0
+      // ~=1.2.3-beta.1 := >=1.2.3-beta.1 <1.3.0-0
+      comp = comp.trim().split(/\s+/).map((c) => c.replace(loose ? COMPATIBLERELEASELOOSE_RE : COMPATIBLERELEASE_RE, (_, M, m, p, pr) => {
+        let ret
+        if (!M || M.toLowerCase() === 'x' || M === '*') {
+          ret = ''
+        } else if (!m || m.toLowerCase() === 'x' || m === '*') {
+          // ~=1 => >=1.0.0 <2.0.0-0 (bump major)
+          ret = `>=${M}.0.0${z} <${+M + 1}.0.0-0`
+        } else if (!p || p.toLowerCase() === 'x' || p === '*') {
+          // ~=1.2 => >=1.2.0 <2.0.0-0 (bump major, not minor)
+          ret = `>=${M}.${m}.0${z} <${+M + 1}.0.0-0`
+        } else if (pr) {
+          // ~=1.2.3-beta.1 => >=1.2.3-beta.1 <1.3.0-0 (bump minor)
+          ret = `>=${M}.${m}.${p}-${pr} <${M}.${+m + 1}.0-0`
+        } else {
+          // ~=1.2.3 => >=1.2.3 <1.3.0-0 (bump minor)
+          ret = `>=${M}.${m}.${p} <${M}.${+m + 1}.0-0`
         }
         return ret
       })).join(' ')

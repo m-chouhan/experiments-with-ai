@@ -382,6 +382,24 @@ zero.
 * `^1.x` := `>=1.0.0 <2.0.0-0`
 * `^0.x` := `>=0.0.0 <1.0.0-0`
 
+#### Compatible Release Ranges `~=1.2.3` `~=1.2` `~=1`
+
+The compatible release operator allows the last component given to
+increase, while the ones before it are fixed.  This follows Python's
+"compatible release" clause from PEP 440.
+
+* `~=1.2.3` := `>=1.2.3 <1.3.0-0` (patch is fixed, minor may increase)
+* `~=1.2` := `>=1.2.0 <2.0.0-0` (minor is fixed, major may increase)
+* `~=1` := `>=1.0.0 <2.0.0-0` (major is fixed, next major may increase)
+* `~=0.2.3` := `>=0.2.3 <0.3.0-0`
+* `~=1.2.3-beta.1` := `>=1.2.3-beta.1 <1.3.0-0` Note that prereleases in
+  the `1.2.3` version will be allowed, if they are greater than or
+  equal to `beta.1`.
+
+Prerelease behavior with `includePrerelease` follows the same conventions
+as tilde and caret ranges: the lower bound prerelease is preserved, and
+the upper bound excludes its own prereleases (`-0`).
+
 ### Range Grammar
 
 Putting all this together, here is a Backus-Naur grammar for ranges,
