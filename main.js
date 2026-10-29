@@ -7,6 +7,8 @@ const chargingSpots = ['C1', 'C2'];
 
 let parked = {};
 let usedSpots = [];
+const passes = new Set();
+const maxBilledHours = 8;
 
 function park(plate, type) {
   if (parked[plate]) {
@@ -40,12 +42,20 @@ function park(plate, type) {
   console.log('PARKED ' + plate + ' ' + spot);
 }
 
-function computeFee(entry, hours) {
-  if (entry.type === 'bike') return hours * 10;
-  if (entry.type === 'car') return hours * 20;
-  if (entry.type === 'truck') return hours * 50;
-  if (entry.type === 'ev') return hours * (chargingSpots.includes(entry.spot) ? 30 : 20);
-  return 0;
+function computeFee(plate, entry, hours) {
+  const billed = Math.min(hours, maxBilledHours);
+  let rate = 0;
+  if (entry.type === 'bike') rate = 10;
+  else if (entry.type === 'car') rate = 20;
+  else if (entry.type === 'truck') rate = 50;
+  else if (entry.type === 'ev') rate = chargingSpots.includes(entry.spot) ? 30 : 20;
+  const fee = billed * rate;
+  return passes.has(plate) ? fee / 2 : fee;
+}
+
+function pass(plate) {
+  passes.add(plate);
+  console.log('PASS ' + plate);
 }
 
 function leave(plate, hoursText) {
@@ -58,7 +68,7 @@ function leave(plate, hoursText) {
     console.log('NOT FOUND ' + plate);
     return;
   }
-  const fee = computeFee(parked[plate], hours);
+  const fee = computeFee(plate, parked[plate], hours);
   const spot = parked[plate].spot;
   usedSpots = usedSpots.filter((s) => s !== spot);
   delete parked[plate];
@@ -75,7 +85,7 @@ function quote(plate, hoursText) {
     console.log('NOT FOUND ' + plate);
     return;
   }
-  const fee = computeFee(parked[plate], hours);
+  const fee = computeFee(plate, parked[plate], hours);
   console.log('QUOTE ' + plate + ' FEE ' + fee);
 }
 
@@ -86,5 +96,6 @@ for (const line of lines) {
   if (parts[0] === 'park' && parts.length === 3) park(parts[1], parts[2]);
   else if (parts[0] === 'leave' && parts.length === 3) leave(parts[1], parts[2]);
   else if (parts[0] === 'quote' && parts.length === 3) quote(parts[1], parts[2]);
+  else if (parts[0] === 'pass' && parts.length === 2) pass(parts[1]);
   else console.log('INVALID');
 }
