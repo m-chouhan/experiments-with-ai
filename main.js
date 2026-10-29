@@ -4,12 +4,14 @@ const VEHICLES = {
   bike: { rate: 10, fits: ['small', 'medium', 'large'] },
   car: { rate: 20, fits: ['medium', 'large'] },
   truck: { rate: 50, fits: ['large'] },
+  ev: { rate: 20, fits: ['medium', 'large'], charging: true },
 };
 
 const SPOTS = [
   { id: 'S1', size: 'small' }, { id: 'S2', size: 'small' },
   { id: 'M1', size: 'medium' }, { id: 'M2', size: 'medium' }, { id: 'M3', size: 'medium' },
   { id: 'L1', size: 'large' },
+  { id: 'C1', size: 'medium', charging: true }, { id: 'C2', size: 'medium', charging: true },
 ];
 
 const COMMANDS = {
@@ -26,10 +28,24 @@ class ParkingLot {
 
   park(plate, type) {
     const taken = new Set([...this.tickets.values()].map((t) => t.spot));
-    for (const size of VEHICLES[type].fits) {
-      const spot = this.spots.find((s) => s.size === size && !taken.has(s.id));
+    const vehicle = VEHICLES[type];
+    
+    // EVs prefer charging spots first
+    if (vehicle.charging) {
+      const chargingSpots = this.spots.filter((s) => s.charging && !taken.has(s.id));
+      if (chargingSpots.length > 0) {
+        const spot = chargingSpots[0]; // C1 is first, then C2
+        const ticket = { type, spot: spot.id, charging: true };
+        this.tickets.set(plate, ticket);
+        return ticket;
+      }
+    }
+    
+    // If no charging spot available (or not an EV), park in regular spots
+    for (const size of vehicle.fits) {
+      const spot = this.spots.find((s) => !s.charging && s.size === size && !taken.has(s.id));
       if (spot) {
-        const ticket = { type, spot: spot.id };
+        const ticket = { type, spot: spot.id, charging: false };
         this.tickets.set(plate, ticket);
         return ticket;
       }
@@ -48,7 +64,15 @@ class ParkingLot {
 
 class Pricing {
   fee(ticket, hours) {
-    return VEHICLES[ticket.type].rate * hours;
+    let baseFee = VEHICLES[ticket.type].rate * hours;
+    let chargingFee = 0;
+    
+    // Add charging fee if EV is in a charging spot
+    if (ticket.charging) {
+      chargingFee = 10 * hours;
+    }
+    
+    return baseFee + chargingFee;
   }
 }
 
