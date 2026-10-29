@@ -39,8 +39,10 @@ node harness/run.mjs --model haiku --runs 3   # both versions, change 1 then cha
 Each version gets a fresh git repo; the harness commits after each change and fetches the
 result into this repo as branch `exp/<model>/<version>-<run>`. Claude runs under macOS
 `sandbox-exec`: it cannot read this repo (so never sees the tests) or write outside its
-working folder. Pinned model, tools `Read,Edit,Write,Bash,Glob,Grep`, no user settings or
-MCP servers.
+working folder. Pinned model, no user settings. Raw model: Claude Code's default system prompt
+and built-in tools are replaced by a one-line system prompt and three minimal tools
+(`read_file`, `write_file`, `run_command` in `harness/tools.mjs`), so each request carries
+about 1.4k tokens of scaffolding instead of 13.5k.
 
 Results:
 - `results/<timestamp>.json` — per change: wall time, turns, tool calls, tokens (input,
@@ -49,5 +51,6 @@ Results:
   thinking, what it said, each tool call and its result. Raw stream in `.jsonl` alongside.
 - `results/final-diffs/` — baseline → after change 2, per run.
 - `results/v1/` — first round, run against the original mature baseline (see its README).
+- `results/v2/` — Haiku ×3 on the fixed mature baseline, still with Claude Code's default prompt and tools.
 
 `archive/tictactoe-pilot/` holds the earlier tic-tac-toe pilot.
