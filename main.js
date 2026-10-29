@@ -3,6 +3,7 @@ const fs = require('fs');
 const smallSpots = ['S1', 'S2'];
 const mediumSpots = ['M1', 'M2', 'M3'];
 const largeSpots = ['L1'];
+const chargingSpots = ['C1', 'C2'];
 
 let parked = {};
 let usedSpots = [];
@@ -20,6 +21,10 @@ function park(plate, type) {
   } else if (type === 'car') {
     for (const s of mediumSpots) if (!spot && !usedSpots.includes(s)) spot = s;
     for (const s of largeSpots) if (!spot && !usedSpots.includes(s)) spot = s;
+  } else if (type === 'ev') {
+    for (const s of chargingSpots) if (!spot && !usedSpots.includes(s)) spot = s;
+    for (const s of mediumSpots) if (!spot && !usedSpots.includes(s)) spot = s;
+    for (const s of largeSpots) if (!spot && !usedSpots.includes(s)) spot = s;
   } else if (type === 'truck') {
     for (const s of largeSpots) if (!spot && !usedSpots.includes(s)) spot = s;
   } else {
@@ -35,6 +40,14 @@ function park(plate, type) {
   console.log('PARKED ' + plate + ' ' + spot);
 }
 
+function computeFee(entry, hours) {
+  if (entry.type === 'bike') return hours * 10;
+  if (entry.type === 'car') return hours * 20;
+  if (entry.type === 'truck') return hours * 50;
+  if (entry.type === 'ev') return hours * (chargingSpots.includes(entry.spot) ? 30 : 20);
+  return 0;
+}
+
 function leave(plate, hoursText) {
   const hours = Number(hoursText);
   if (!Number.isInteger(hours) || hours < 1) {
@@ -45,11 +58,7 @@ function leave(plate, hoursText) {
     console.log('NOT FOUND ' + plate);
     return;
   }
-  const type = parked[plate].type;
-  let fee = 0;
-  if (type === 'bike') fee = hours * 10;
-  else if (type === 'car') fee = hours * 20;
-  else if (type === 'truck') fee = hours * 50;
+  const fee = computeFee(parked[plate], hours);
   const spot = parked[plate].spot;
   usedSpots = usedSpots.filter((s) => s !== spot);
   delete parked[plate];
@@ -66,11 +75,7 @@ function quote(plate, hoursText) {
     console.log('NOT FOUND ' + plate);
     return;
   }
-  const type = parked[plate].type;
-  let fee = 0;
-  if (type === 'bike') fee = hours * 10;
-  else if (type === 'car') fee = hours * 20;
-  else if (type === 'truck') fee = hours * 50;
+  const fee = computeFee(parked[plate], hours);
   console.log('QUOTE ' + plate + ' FEE ' + fee);
 }
 
