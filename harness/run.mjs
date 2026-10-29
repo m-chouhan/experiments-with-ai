@@ -3,8 +3,6 @@
 // apply change 1 then change 2, commit after each, run the hidden tests, then fetch the
 // result into this repo as branch exp/<model>/<version>-<run>. Writes results/<timestamp>.json.
 // Claude runs under sandbox-exec: it cannot read this repo or write outside its workdir.
-// Raw model: a one-line system prompt and three minimal tools (harness/tools.mjs over MCP)
-// replace Claude Code's default system prompt and built-in tools.
 // Per change, the full transcript and a readable step log go to results/transcripts/.
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -13,6 +11,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const MODELS = { sonnet: 'claude-sonnet-5-5', haiku: 'claude-haiku-4-5-20251001' };
+const TOOLS = 'Read,Edit,Write,Bash,Glob,Grep';
 const CHANGES = ['change1', 'change2'];
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const arg = (name, fallback) => {
@@ -24,12 +23,6 @@ const MODEL = MODELS[modelName];
 const runs = Number(arg('runs', 1));
 const only = arg('only', null);
 const versions = ['junior', 'mature'].filter((v) => !only || v === only);
-
-// The sandbox blocks reading this repo, so serve the tools from a copy outside it.
-const toolsDir = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'lld-tools-')));
-const toolsServer = path.join(toolsDir, 'tools.mjs');
-fs.copyFileSync(path.join(root, 'harness', 'tools.mjs'), toolsServer);
-process.on('exit', () => fs.rmSync(toolsDir, { recursive: true, force: true }));
 
 const sh = (cmd, args, cwd) => spawnSync(cmd, args, { cwd, encoding: 'utf8' });
 const git = (cwd, ...args) => sh('git', ['-c', 'user.name=lld-harness', '-c', 'user.email=harness@localhost', ...args], cwd);
@@ -62,11 +55,10 @@ const clip = (text, n) => (text.length > n ? `${text.slice(0, n)}…` : text);
 const resultText = (c) => (typeof c === 'string' ? c : (c ?? []).map((x) => x.text ?? '').join(''));
 
 const describeCall = ({ name, input }) => {
-  const tool = name.replace('mcp__tools__', '');
-  if (tool === 'run_command') return `run_command\n\n\`\`\`sh\n${clip(input.command, 1500)}\n\`\`\``;
-  if (tool === 'write_file') return `write_file ${input.path} (${input.content.length} chars)\n\n\`\`\`\n${clip(input.content, 3000)}\n\`\`\``;
-  if (tool === 'read_file') return `read_file ${input.path}`;
-  return `${tool} ${JSON.stringify(input)}`;
+  if (name === 'Bash') return `Bash\n\n\`\`\`sh\n${clip(input.command, 1500)}\n\`\`\``;
+  if (name === 'Edit') return `Edit ${input.file_path}\n\n\`\`\`diff\n${clip(input.old_string, 600).replace(/^/gm, '- ')}\n${clip(input.new_string, 1200).replace(/^/gm, '+ ')}\n\`\`\``;
+  if (name === 'Write') return `Write ${input.file_path} (${input.content.length} chars)`;
+  return `${name} ${JSON.stringify(input)}`;
 };
 
 // Readable step-by-step log: one step per model turn, with thinking, text, tool calls and results.
@@ -100,10 +92,9 @@ const askClaude = (workdir, prompt, logBase, title) => {
     '--model', MODEL,
     '--output-format', 'stream-json', '--verbose',
     '--settings', JSON.stringify({ showThinkingSummaries: true }),
-    '--system-prompt', `You are a coding agent working in the folder ${workdir}. Use the tools to make the requested change.`,
-    '--tools', '',
-    '--mcp-config', JSON.stringify({ mcpServers: { tools: { command: 'node', args: [toolsServer, workdir] } } }),
-    '--allowedTools', 'mcp__tools',
+    '--permission-mode', 'acceptEdits',
+    '--tools', TOOLS,
+    '--allowedTools', TOOLS,
     '--setting-sources', 'project,local',
     '--strict-mcp-config',
     '--no-session-persistence',

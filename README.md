@@ -39,10 +39,8 @@ node harness/run.mjs --model haiku --runs 3   # both versions, change 1 then cha
 Each version gets a fresh git repo; the harness commits after each change and fetches the
 result into this repo as branch `exp/<model>/<version>-<run>`. Claude runs under macOS
 `sandbox-exec`: it cannot read this repo (so never sees the tests) or write outside its
-working folder. Pinned model, no user settings. Raw model: Claude Code's default system prompt
-and built-in tools are replaced by a one-line system prompt and three minimal tools
-(`read_file`, `write_file`, `run_command` in `harness/tools.mjs`), so each request carries
-about 1.4k tokens of scaffolding instead of 13.5k.
+working folder. Pinned model, Claude Code's own system prompt and tools
+`Read,Edit,Write,Bash,Glob,Grep` (as a real agent runs), no user settings or MCP servers.
 
 Results:
 - `results/<timestamp>.json` — per change: wall time, turns, tool calls, tokens (input,
