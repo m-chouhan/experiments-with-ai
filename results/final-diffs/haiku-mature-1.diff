@@ -1,0 +1,98 @@
+diff --git a/main.js b/main.js
+index 158f760..da87975 100644
+--- a/main.js
++++ b/main.js
+@@ -4,18 +4,21 @@ const VEHICLES = {
+   bike: { rate: 10, fits: ['small', 'medium', 'large'] },
+   car: { rate: 20, fits: ['medium', 'large'] },
+   truck: { rate: 50, fits: ['large'] },
++  ev: { rate: 20, fits: ['charging', 'medium', 'large'], chargingFee: 10 },
+ };
+ 
+ const SPOTS = [
+   { id: 'S1', size: 'small' }, { id: 'S2', size: 'small' },
+   { id: 'M1', size: 'medium' }, { id: 'M2', size: 'medium' }, { id: 'M3', size: 'medium' },
+   { id: 'L1', size: 'large' },
++  { id: 'C1', size: 'charging' }, { id: 'C2', size: 'charging' },
+ ];
+ 
+ class ParkingLot {
+   constructor(spots) {
+     this.spots = spots;
+     this.tickets = new Map();
++    this.passes = new Set();
+   }
+ 
+   park(plate, type) {
+@@ -40,11 +43,27 @@ class ParkingLot {
+     this.tickets.delete(plate);
+     return ticket;
+   }
++
++  registerPass(plate) {
++    this.passes.add(plate);
++  }
++
++  hasPass(plate) {
++    return this.passes.has(plate);
++  }
+ }
+ 
+ class Pricing {
+-  fee(ticket, hours) {
+-    return VEHICLES[ticket.type].rate * hours;
++  fee(ticket, hours, hasPass) {
++    const cappedHours = Math.min(hours, 8);
++    let fee = VEHICLES[ticket.type].rate * cappedHours;
++    if (ticket.spot.startsWith('C') && VEHICLES[ticket.type].chargingFee) {
++      fee += VEHICLES[ticket.type].chargingFee * cappedHours;
++    }
++    if (hasPass) {
++      fee = Math.floor(fee / 2);
++    }
++    return fee;
+   }
+ }
+ 
+@@ -56,9 +75,19 @@ class Cli {
+ 
+   handle(line) {
+     const [command, plate, arg, ...extra] = line.trim().split(/\s+/);
+-    if (arg === undefined || extra.length) return 'INVALID';
+-    if (command === 'park') return this.park(plate, arg);
+-    if (command === 'leave' || command === 'quote') return this.charge(command, plate, arg);
++    if (extra.length) return 'INVALID';
++    if (command === 'park') {
++      if (arg === undefined) return 'INVALID';
++      return this.park(plate, arg);
++    }
++    if (command === 'leave' || command === 'quote') {
++      if (arg === undefined) return 'INVALID';
++      return this.charge(command, plate, arg);
++    }
++    if (command === 'pass') {
++      if (arg !== undefined) return 'INVALID';
++      return this.registerPass(plate);
++    }
+     return 'INVALID';
+   }
+ 
+@@ -74,11 +103,17 @@ class Cli {
+     if (!Number.isInteger(hours) || hours < 1) return 'INVALID';
+     const ticket = this.lot.find(plate);
+     if (!ticket) return `NOT FOUND ${plate}`;
+-    const fee = this.pricing.fee(ticket, hours);
++    const hasPass = this.lot.hasPass(plate);
++    const fee = this.pricing.fee(ticket, hours, hasPass);
+     if (command === 'quote') return `QUOTE ${plate} FEE ${fee}`;
+     this.lot.leave(plate);
+     return `LEFT ${plate} ${ticket.spot} FEE ${fee}`;
+   }
++
++  registerPass(plate) {
++    this.lot.registerPass(plate);
++    return `PASS ${plate}`;
++  }
+ }
+ 
+ const cli = new Cli(new ParkingLot(SPOTS), new Pricing());

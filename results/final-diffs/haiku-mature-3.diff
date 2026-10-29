@@ -1,0 +1,110 @@
+diff --git a/main.js b/main.js
+index 158f760..e8c9cc8 100644
+--- a/main.js
++++ b/main.js
+@@ -4,22 +4,38 @@ const VEHICLES = {
+   bike: { rate: 10, fits: ['small', 'medium', 'large'] },
+   car: { rate: 20, fits: ['medium', 'large'] },
+   truck: { rate: 50, fits: ['large'] },
++  ev: { rate: 20, fits: ['medium', 'large'] },
+ };
+ 
+ const SPOTS = [
+   { id: 'S1', size: 'small' }, { id: 'S2', size: 'small' },
+   { id: 'M1', size: 'medium' }, { id: 'M2', size: 'medium' }, { id: 'M3', size: 'medium' },
+   { id: 'L1', size: 'large' },
++  { id: 'C1', charging: true }, { id: 'C2', charging: true },
+ ];
+ 
+ class ParkingLot {
+   constructor(spots) {
+     this.spots = spots;
+     this.tickets = new Map();
++    this.passes = new Set();
+   }
+ 
+   park(plate, type) {
+     const taken = new Set([...this.tickets.values()].map((t) => t.spot));
++
++    // EVs prioritize charging spots (C1 first, then C2)
++    if (type === 'ev') {
++      for (const spotId of ['C1', 'C2']) {
++        if (!taken.has(spotId)) {
++          const ticket = { plate, type, spot: spotId };
++          this.tickets.set(plate, ticket);
++          return ticket;
++        }
++      }
++    }
++
++    // Try regular spots by size preference
+     for (const size of VEHICLES[type].fits) {
+       const spot = this.spots.find((s) => s.size === size && !taken.has(s.id));
+       if (spot) {
+@@ -40,11 +56,33 @@ class ParkingLot {
+     this.tickets.delete(plate);
+     return ticket;
+   }
++
++  registerPass(plate) {
++    this.passes.add(plate);
++  }
++
++  hasPass(plate) {
++    return this.passes.has(plate);
++  }
+ }
+ 
+ class Pricing {
++  constructor(lot) {
++    this.lot = lot;
++  }
++
+   fee(ticket, hours) {
+-    return VEHICLES[ticket.type].rate * hours;
++    const cappedHours = Math.min(hours, 8);
++    let baseFee = VEHICLES[ticket.type].rate * cappedHours;
++    // EVs in charging spots pay an additional charging fee
++    if (ticket.type === 'ev' && (ticket.spot === 'C1' || ticket.spot === 'C2')) {
++      baseFee += 10 * cappedHours;
++    }
++    // Apply 50% discount for vehicles with a pass
++    if (this.lot.hasPass(ticket.plate)) {
++      baseFee *= 0.5;
++    }
++    return baseFee;
+   }
+ }
+ 
+@@ -56,12 +94,21 @@ class Cli {
+ 
+   handle(line) {
+     const [command, plate, arg, ...extra] = line.trim().split(/\s+/);
++    if (command === 'pass') {
++      if (arg !== undefined || extra.length) return 'INVALID';
++      return this.pass(plate);
++    }
+     if (arg === undefined || extra.length) return 'INVALID';
+     if (command === 'park') return this.park(plate, arg);
+     if (command === 'leave' || command === 'quote') return this.charge(command, plate, arg);
+     return 'INVALID';
+   }
+ 
++  pass(plate) {
++    this.lot.registerPass(plate);
++    return `PASS ${plate}`;
++  }
++
+   park(plate, type) {
+     if (this.lot.find(plate)) return `ALREADY PARKED ${plate}`;
+     if (!VEHICLES[type]) return 'INVALID';
+@@ -81,7 +128,8 @@ class Cli {
+   }
+ }
+ 
+-const cli = new Cli(new ParkingLot(SPOTS), new Pricing());
++const lot = new ParkingLot(SPOTS);
++const cli = new Cli(lot, new Pricing(lot));
+ for (const line of fs.readFileSync(0, 'utf8').split('\n')) {
+   if (line.trim()) console.log(cli.handle(line));
+ }

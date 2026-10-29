@@ -139,11 +139,12 @@ for (let run = 1; run <= runs; run++) for (const version of versions) {
   for (const [i, change] of CHANGES.entries()) {
     const prompt = fs.readFileSync(path.join(root, 'prompts', `${change}.md`), 'utf8');
     const logBase = path.join(root, 'results', 'transcripts', modelName, `${version}-${run}`, change);
+    const base = sh('git', ['rev-parse', 'HEAD'], workdir).stdout.trim();
     const agent = askClaude(workdir, prompt, logBase, `${version} · ${change} · ${modelName} · run ${run}`);
     git(workdir, 'add', '-A');
     git(workdir, 'commit', '-q', '--allow-empty', '-m', `${change} (${version})`, '-m',
       `model=${MODEL} wall_s=${agent.wall_s} total_tokens=${agent.total_tokens} cost_usd=${agent.cost_usd}`);
-    const diff = sh('git', ['diff', '--shortstat', 'HEAD~1', 'HEAD'], workdir).stdout.trim();
+    const diff = sh('git', ['diff', '--shortstat', base, 'HEAD'], workdir).stdout.trim();
     const tests = runTests(workdir, ['baseline/baseline.test.js', ...CHANGES.slice(0, i + 1).map((c) => `target/${c}.test.js`)]);
     const row = { model: MODEL, run, version, change, ...agent, diff, ...tests };
     results.push(row);

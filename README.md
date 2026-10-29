@@ -33,12 +33,20 @@ PROJECT_DIR=projects/junior node --test tests/baseline/*.test.js
 ## Run
 
 ```bash
-node harness/run.mjs            # both versions, change 1 then change 2
+node harness/run.mjs --model haiku --runs 3   # both versions, change 1 then change 2, 3 times
 ```
 
 Each version gets a fresh git repo; the harness commits after each change and fetches the
-result into this repo as branch `exp/junior` / `exp/mature`. Per change it records wall time,
-turns, tokens, cost, diff size and test results in `results/<timestamp>.json`.
+result into this repo as branch `exp/<model>/<version>-<run>`. Claude runs under macOS
+`sandbox-exec`: it cannot read this repo (so never sees the tests) or write outside its
+working folder. Pinned model, tools `Read,Edit,Write,Bash,Glob,Grep`, no user settings or
+MCP servers.
 
-Pinned model `claude-sonnet-5-5`, tools `Read,Edit,Write,Bash,Glob,Grep`, no user settings
-or MCP servers. `archive/tictactoe-pilot/` holds the earlier tic-tac-toe pilot.
+Results:
+- `results/<timestamp>.json` — per change: wall time, turns, tool calls, tokens (input,
+  output, thinking, cache), cost, diff size, hidden-test results.
+- `results/transcripts/<model>/<version>-<run>/<change>.md` — readable step log: the model's
+  thinking, what it said, each tool call and its result. Raw stream in `.jsonl` alongside.
+- `results/final-diffs/` — baseline → after change 2, per run.
+
+`archive/tictactoe-pilot/` holds the earlier tic-tac-toe pilot.
