@@ -1,0 +1,13 @@
+pass ABC123
+park ABC123 car
+quote ABC123 10
+quote ABC123 8
+leave ABC123 10
+park XYZ789 bike
+quote XYZ789 5
+pass XYZ789
+quote XYZ789 5
+park EVehicle ev
+quote EVehicle 8
+pass EVehicle
+quote EVehicle 8

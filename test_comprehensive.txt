@@ -1,0 +1,16 @@
+park BIKE1 bike
+park CAR1 car
+park TRUCK1 truck
+park EV1 ev
+quote BIKE1 10
+quote CAR1 10
+quote TRUCK1 10
+quote EV1 10
+pass BIKE1
+pass CAR1
+pass TRUCK1
+pass EV1
+quote BIKE1 10
+quote CAR1 10
+quote TRUCK1 10
+quote EV1 10

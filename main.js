@@ -18,6 +18,7 @@ const COMMANDS = {
   park: { args: ['plate', 'type'], run: (cli, plate, type) => cli.park(plate, type) },
   leave: { args: ['plate', 'hours'], run: (cli, plate, hours) => cli.leave(plate, hours) },
   quote: { args: ['plate', 'hours'], run: (cli, plate, hours) => cli.quote(plate, hours) },
+  pass: { args: ['plate'], run: (cli, plate) => cli.pass(plate) },
 };
 
 class ParkingLot {
@@ -68,13 +69,26 @@ class ParkingLot {
 }
 
 class Pricing {
+  constructor(passes) {
+    this.passes = passes;
+  }
+
   fee(ticket, hours) {
     const baseRate = VEHICLES[ticket.type].rate;
-    const baseFee = baseRate * hours;
+    
+    // Cap hours at 8
+    const cappedHours = Math.min(hours, 8);
+    
+    let baseFee = baseRate * cappedHours;
 
-    // EVs in charging spots pay extra 10/hour for charging
+    // EVs in charging spots pay extra 10/hour for charging (also capped)
     if (VEHICLES[ticket.type].isEv && ticket.isCharging) {
-      return baseFee + 10 * hours;
+      baseFee += 10 * cappedHours;
+    }
+
+    // Apply 50% discount for pass holders (after cap)
+    if (this.passes.has(ticket.plate)) {
+      return Math.floor(baseFee / 2);
     }
 
     return baseFee;
@@ -82,9 +96,10 @@ class Pricing {
 }
 
 class Cli {
-  constructor(lot, pricing) {
+  constructor(lot, pricing, passes) {
     this.lot = lot;
     this.pricing = pricing;
+    this.passes = passes;
   }
 
   handle(line) {
@@ -113,16 +128,24 @@ class Cli {
     return bill.error || `QUOTE ${plate} FEE ${bill.fee}`;
   }
 
+  pass(plate) {
+    this.passes.add(plate);
+    return `PASS ${plate}`;
+  }
+
   bill(plate, hoursText) {
     const hours = Number(hoursText);
     if (!Number.isInteger(hours) || hours < 1) return { error: 'INVALID' };
     const ticket = this.lot.find(plate);
     if (!ticket) return { error: `NOT FOUND ${plate}` };
+    // Store plate in ticket for fee calculation
+    ticket.plate = plate;
     return { ticket, fee: this.pricing.fee(ticket, hours) };
   }
 }
 
-const cli = new Cli(new ParkingLot(SPOTS), new Pricing());
+const passes = new Set();
+const cli = new Cli(new ParkingLot(SPOTS), new Pricing(passes), passes);
 for (const raw of fs.readFileSync(0, 'utf8').split('\n')) {
   const line = raw.trim();
   if (line) console.log(cli.handle(line));

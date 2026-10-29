@@ -1,0 +1,11 @@
+park TRUCK1 truck
+quote TRUCK1 12
+pass TRUCK1
+quote TRUCK1 12
+pass TRUCK1
+park CAR1 car
+pass CAR1
+quote CAR1 1
+quote CAR1 8
+quote CAR1 16
+leave TRUCK1 12

@@ -11,6 +11,7 @@ Spots: S1 S2 (small), M1 M2 M3 (medium), L1 (large), C1 C2 (charging).
 | `park <plate> <bike\|car\|truck\|ev>` | `PARKED <plate> <spot>`, `ALREADY PARKED <plate>`, `FULL <plate>` |
 | `leave <plate> <hours>` | `LEFT <plate> <spot> FEE <fee>`, `NOT FOUND <plate>` |
 | `quote <plate> <hours>` | `QUOTE <plate> FEE <fee>`, `NOT FOUND <plate>` |
+| `pass <plate>` | `PASS <plate>` |
 
 - A bike fits small, medium or large spots; a car medium or large; a truck only large; an EV medium or large.
 - A vehicle takes the smallest size that fits, lowest-numbered spot first. For EVs, this means charging spots (C1 before C2) are prioritized.
@@ -18,4 +19,7 @@ Spots: S1 S2 (small), M1 M2 M3 (medium), L1 (large), C1 C2 (charging).
 - Other vehicles never use charging spots.
 - Rates per hour: bike 10, car 20, truck 50, EV 20. EVs in charging spots pay an additional 10/hour charging fee.
 - Hours are whole numbers, at least 1.
+- No stay is charged for more than 8 hours: a 10-hour stay costs the same as an 8-hour stay. This cap applies before other fees.
+- The `pass` command registers a monthly pass for a plate. Registering the same plate again is harmless and prints the same line. A pass can be registered before or after the vehicle parks, and stays valid for later visits.
+- Vehicles with a monthly pass pay half the fee, applied after the hour cap.
 - Anything malformed (unknown command or vehicle, wrong number of words, bad hours) prints `INVALID`. Blank lines are ignored.
