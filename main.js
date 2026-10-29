@@ -4,12 +4,14 @@ const VEHICLES = {
   bike: { rate: 10, fits: ['small', 'medium', 'large'] },
   car: { rate: 20, fits: ['medium', 'large'] },
   truck: { rate: 50, fits: ['large'] },
+  ev: { rate: 20, fits: ['medium', 'large'], charging: true },
 };
 
 const SPOTS = [
   { id: 'S1', size: 'small' }, { id: 'S2', size: 'small' },
   { id: 'M1', size: 'medium' }, { id: 'M2', size: 'medium' }, { id: 'M3', size: 'medium' },
   { id: 'L1', size: 'large' },
+  { id: 'C1', size: 'charging' }, { id: 'C2', size: 'charging' },
 ];
 
 const COMMANDS = {
@@ -26,8 +28,22 @@ class ParkingLot {
 
   park(plate, type) {
     const taken = new Set([...this.tickets.values()].map((t) => t.spot));
+    
+    // EVs try charging spots first
+    if (VEHICLES[type].charging) {
+      for (const chargingSpot of ['C1', 'C2']) {
+        if (!taken.has(chargingSpot)) {
+          const ticket = { type, spot: chargingSpot, charging: true };
+          this.tickets.set(plate, ticket);
+          return ticket;
+        }
+      }
+    }
+    
+    // EVs and regular vehicles use normal spots
     for (const size of VEHICLES[type].fits) {
-      const spot = this.spots.find((s) => s.size === size && !taken.has(s.id));
+      // Skip charging spots for non-EVs and when looking for regular spots for EVs
+      const spot = this.spots.find((s) => s.size === size && s.size !== 'charging' && !taken.has(s.id));
       if (spot) {
         const ticket = { type, spot: spot.id };
         this.tickets.set(plate, ticket);
@@ -48,7 +64,12 @@ class ParkingLot {
 
 class Pricing {
   fee(ticket, hours) {
-    return VEHICLES[ticket.type].rate * hours;
+    let baseFee = VEHICLES[ticket.type].rate * hours;
+    // Add charging fee if EV is in a charging spot
+    if (ticket.charging) {
+      baseFee += 10 * hours;
+    }
+    return baseFee;
   }
 }
 
