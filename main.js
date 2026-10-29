@@ -4,12 +4,14 @@ const VEHICLES = {
   bike: { rate: 10, fits: ['small', 'medium', 'large'] },
   car: { rate: 20, fits: ['medium', 'large'] },
   truck: { rate: 50, fits: ['large'] },
+  ev: { rate: 20, fits: ['medium', 'large'], isEv: true },
 };
 
 const SPOTS = [
   { id: 'S1', size: 'small' }, { id: 'S2', size: 'small' },
   { id: 'M1', size: 'medium' }, { id: 'M2', size: 'medium' }, { id: 'M3', size: 'medium' },
   { id: 'L1', size: 'large' },
+  { id: 'C1', size: 'charging' }, { id: 'C2', size: 'charging' },
 ];
 
 const COMMANDS = {
@@ -26,14 +28,33 @@ class ParkingLot {
 
   park(plate, type) {
     const taken = new Set([...this.tickets.values()].map((t) => t.spot));
+    const isEv = VEHICLES[type]?.isEv;
+
+    // EVs: try charging spots first
+    if (isEv) {
+      for (const spotId of ['C1', 'C2']) {
+        const spot = this.spots.find((s) => s.id === spotId && !taken.has(s.id));
+        if (spot) {
+          const ticket = { type, spot: spot.id, isCharging: true };
+          this.tickets.set(plate, ticket);
+          return ticket;
+        }
+      }
+    }
+
+    // Try regular spots (all vehicles, or EVs if charging spots full)
     for (const size of VEHICLES[type].fits) {
-      const spot = this.spots.find((s) => s.size === size && !taken.has(s.id));
+      // Skip charging spots for non-EVs and for EVs looking for fallback
+      const spot = this.spots.find(
+        (s) => s.size === size && !taken.has(s.id) && s.size !== 'charging'
+      );
       if (spot) {
-        const ticket = { type, spot: spot.id };
+        const ticket = { type, spot: spot.id, isCharging: false };
         this.tickets.set(plate, ticket);
         return ticket;
       }
     }
+
     return null;
   }
 
@@ -48,7 +69,15 @@ class ParkingLot {
 
 class Pricing {
   fee(ticket, hours) {
-    return VEHICLES[ticket.type].rate * hours;
+    const baseRate = VEHICLES[ticket.type].rate;
+    const baseFee = baseRate * hours;
+
+    // EVs in charging spots pay extra 10/hour for charging
+    if (VEHICLES[ticket.type].isEv && ticket.isCharging) {
+      return baseFee + 10 * hours;
+    }
+
+    return baseFee;
   }
 }
 
