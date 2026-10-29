@@ -1,0 +1,137 @@
+diff --git aa/main.js bb/main.js
+index 6f513dd..269c774 100644
+--- aa/main.js
++++ bb/main.js
+@@ -2,11 +2,23 @@ import fs from 'node:fs';
+ import { playGame } from './src/game.js';
+ import { formatScores, loadScores, recordResult, saveScores } from './src/scores.js';
+ 
++const fail = (msg) => {
++  console.error(msg);
++  process.exit(2);
++};
++
+ const parseArgs = (argv) => {
+-  const opts = { ai: null, scores: 'scores.json' };
++  const opts = { ai: null, scores: 'scores.json', size: 3, win: null };
+   for (let i = 0; i < argv.length; i += 2) {
+     if (argv[i] === '--ai') opts.ai = argv[i + 1];
+     if (argv[i] === '--scores') opts.scores = argv[i + 1];
++    if (argv[i] === '--size') opts.size = Number(argv[i + 1]);
++    if (argv[i] === '--win') opts.win = Number(argv[i + 1]);
++  }
++  opts.win ??= opts.size;
++  if (!Number.isInteger(opts.size) || opts.size < 1) fail('--size must be a positive integer');
++  if (!Number.isInteger(opts.win) || opts.win < 1 || opts.win > opts.size) {
++    fail('--win must be an integer between 1 and --size');
+   }
+   return opts;
+ };
+@@ -18,7 +30,7 @@ const readInputs = () => {
+ };
+ 
+ const opts = parseArgs(process.argv.slice(2));
+-const result = playGame({ size: 3, aiMark: opts.ai, inputs: readInputs(), print: console.log });
++const result = playGame({ size: opts.size, win: opts.win, aiMark: opts.ai, inputs: readInputs(), print: console.log });
+ 
+ if (result === 'INCOMPLETE') {
+   console.log('INCOMPLETE');
+diff --git aa/src/ai.js bb/src/ai.js
+index 9793171..5869162 100644
+--- aa/src/ai.js
++++ bb/src/ai.js
+@@ -1,14 +1,14 @@
+ import { emptyCells, place, winner } from './board.js';
+ 
+-const winningCell = (board, mark) =>
+-  emptyCells(board).find(([r, c]) => winner(place(board, r, c, mark)) === mark);
++const winningCell = (board, mark, win) =>
++  emptyCells(board).find(([r, c]) => winner(place(board, r, c, mark), win) === mark);
+ 
+-export const chooseMove = (board, mark, opponent) => {
++export const chooseMove = (board, mark, opponent, win = board.length) => {
+   const centre = Math.floor(board.length / 2);
+   const free = emptyCells(board);
+   return (
+-    winningCell(board, mark) ||
+-    winningCell(board, opponent) ||
++    winningCell(board, mark, win) ||
++    winningCell(board, opponent, win) ||
+     free.find(([r, c]) => r === centre && c === centre) ||
+     free[0]
+   );
+diff --git aa/src/board.js bb/src/board.js
+index cb653c5..f9fd34d 100644
+--- aa/src/board.js
++++ bb/src/board.js
+@@ -16,21 +16,23 @@ export const emptyCells = (board) =>
+ 
+ export const render = (board) => board.map((row) => row.join(' ')).join('\n');
+ 
+-const lines = (size) => {
+-  const range = [...Array(size).keys()];
+-  return [
+-    ...range.map((r) => range.map((c) => [r, c])),
+-    ...range.map((c) => range.map((r) => [r, c])),
+-    range.map((i) => [i, i]),
+-    range.map((i) => [i, size - 1 - i]),
+-  ];
+-};
++const DIRECTIONS = [[0, 1], [1, 0], [1, 1], [1, -1]];
+ 
+-export const winner = (board) => {
+-  for (const line of lines(board.length)) {
+-    const [r0, c0] = line[0];
+-    const first = board[r0][c0];
+-    if (first !== EMPTY && line.every(([r, c]) => board[r][c] === first)) return first;
++export const winner = (board, win = board.length) => {
++  const size = board.length;
++  for (let r = 0; r < size; r++) {
++    for (let c = 0; c < size; c++) {
++      const first = board[r][c];
++      if (first === EMPTY) continue;
++      for (const [dr, dc] of DIRECTIONS) {
++        const er = r + dr * (win - 1);
++        const ec = c + dc * (win - 1);
++        if (er < 0 || ec < 0 || er >= size || ec >= size) continue;
++        let k = 1;
++        while (k < win && board[r + dr * k][c + dc * k] === first) k++;
++        if (k === win) return first;
++      }
++    }
+   }
+   return null;
+ };
+diff --git aa/src/game.js bb/src/game.js
+index 37266c0..66e39d5 100644
+--- aa/src/game.js
++++ bb/src/game.js
+@@ -9,7 +9,7 @@ const parseMove = (line) => {
+ };
+ 
+ // Returns 'X', 'O', 'DRAW', or 'INCOMPLETE' when input runs out.
+-export const playGame = ({ size, aiMark, inputs, print }) => {
++export const playGame = ({ size, win = size, aiMark, inputs, print }) => {
+   let board = createBoard(size);
+   let mark = 'X';
+   let next = 0;
+@@ -17,7 +17,7 @@ export const playGame = ({ size, aiMark, inputs, print }) => {
+   while (true) {
+     let move;
+     if (mark === aiMark) {
+-      move = chooseMove(board, mark, other(mark));
++      move = chooseMove(board, mark, other(mark), win);
+     } else {
+       if (next >= inputs.length) return 'INCOMPLETE';
+       move = parseMove(inputs[next++]);
+@@ -30,8 +30,8 @@ export const playGame = ({ size, aiMark, inputs, print }) => {
+     board = place(board, ...move, mark);
+     print(render(board));
+ 
+-    const win = winner(board);
+-    if (win) return win;
++    const won = winner(board, win);
++    if (won) return won;
+     if (emptyCells(board).length === 0) return 'DRAW';
+     mark = other(mark);
+   }

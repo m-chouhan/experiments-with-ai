@@ -1,0 +1,87 @@
+diff --git aa/main.js bb/main.js
+index 8336d65..acfcfb0 100644
+--- aa/main.js
++++ bb/main.js
+@@ -1,21 +1,38 @@
+ const fs = require('fs');
+ var a = process.argv.slice(2);
+-var ai = null, sf = 'scores.json';
++var ai = null, sf = 'scores.json', n = 3, k = null;
+ for (var i = 0; i < a.length; i += 2) {
+   if (a[i] == '--ai') ai = a[i + 1];
+   if (a[i] == '--scores') sf = a[i + 1];
++  if (a[i] == '--size') n = Number(a[i + 1]);
++  if (a[i] == '--win') k = Number(a[i + 1]);
+ }
+-var b = [['.', '.', '.'], ['.', '.', '.'], ['.', '.', '.']];
++if (k === null) k = Math.min(n, 3);
++if (!Number.isInteger(n) || n < 1 || !Number.isInteger(k) || k < 1 || k > n) {
++  console.error('Invalid --size/--win: size must be a positive integer and win must be between 1 and size');
++  process.exit(1);
++}
++var b = [];
++for (var i = 0; i < n; i++) { b.push([]); for (var j = 0; j < n; j++) b[i].push('.'); }
+ var lines = fs.readFileSync(0, 'utf8').split('\n');
+ if (lines[lines.length - 1] === '') lines.pop();
+ var li = 0, t = 'X', done = false, res = '';
+ 
+ function w(x) {
+-  for (var i = 0; i < 3; i++) {
+-    if (x[i][0] != '.' && x[i][0] == x[i][1] && x[i][1] == x[i][2]) return x[i][0];
+-    if (x[0][i] != '.' && x[0][i] == x[1][i] && x[1][i] == x[2][i]) return x[0][i];
++  var dirs = [[0, 1], [1, 0], [1, 1], [1, -1]];
++  for (var y = 0; y < n; y++) for (var c0 = 0; c0 < n; c0++) {
++    var v = x[y][c0];
++    if (v == '.') continue;
++    for (var d = 0; d < dirs.length; d++) {
++      var cnt = 1;
++      while (cnt < k) {
++        var yy = y + dirs[d][0] * cnt, xx = c0 + dirs[d][1] * cnt;
++        if (yy < 0 || yy >= n || xx < 0 || xx >= n || x[yy][xx] != v) break;
++        cnt++;
++      }
++      if (cnt == k) return v;
++    }
+   }
+-  if (x[1][1] != '.' && ((x[0][0] == x[1][1] && x[1][1] == x[2][2]) || (x[0][2] == x[1][1] && x[1][1] == x[2][0]))) return x[1][1];
+   return null;
+ }
+ 
+@@ -25,7 +42,7 @@ while (!done) {
+     var o = t == 'X' ? 'O' : 'X', found = false;
+     for (var p = 0; p < 2 && !found; p++) {
+       var m = p == 0 ? t : o;
+-      for (var y = 0; y < 3 && !found; y++) for (var x = 0; x < 3 && !found; x++) {
++      for (var y = 0; y < n && !found; y++) for (var x = 0; x < n && !found; x++) {
+         if (b[y][x] == '.') {
+           b[y][x] = m;
+           var ww = w(b);
+@@ -35,15 +52,16 @@ while (!done) {
+       }
+     }
+     if (!found) {
+-      if (b[1][1] == '.') { r = 1; c = 1; found = true; }
+-      for (var y = 0; y < 3 && !found; y++) for (var x = 0; x < 3 && !found; x++) {
++      var mid = Math.floor(n / 2);
++      if (b[mid][mid] == '.') { r = mid; c = mid; found = true; }
++      for (var y = 0; y < n && !found; y++) for (var x = 0; x < n && !found; x++) {
+         if (b[y][x] == '.') { r = y; c = x; found = true; }
+       }
+     }
+   } else {
+     if (li >= lines.length) { res = 'INCOMPLETE'; break; }
+     var parts = lines[li++].trim().split(/\s+/).map(Number);
+-    if (parts.length != 2 || !Number.isInteger(parts[0]) || !Number.isInteger(parts[1]) || parts[0] < 0 || parts[1] < 0 || parts[0] > 2 || parts[1] > 2 || b[parts[0]][parts[1]] != '.') {
++    if (parts.length != 2 || !Number.isInteger(parts[0]) || !Number.isInteger(parts[1]) || parts[0] < 0 || parts[1] < 0 || parts[0] >= n || parts[1] >= n || b[parts[0]][parts[1]] != '.') {
+       console.log('INVALID');
+       continue;
+     }
+@@ -53,7 +71,7 @@ while (!done) {
+   console.log(b.map(function (q) { return q.join(' '); }).join('\n'));
+   var win = w(b);
+   var full = true;
+-  for (var y = 0; y < 3; y++) for (var x = 0; x < 3; x++) if (b[y][x] == '.') full = false;
++  for (var y = 0; y < n; y++) for (var x = 0; x < n; x++) if (b[y][x] == '.') full = false;
+   if (win) { res = 'WINNER ' + win; done = true; }
+   else if (full) { res = 'DRAW'; done = true; }
+   else t = t == 'X' ? 'O' : 'X';
