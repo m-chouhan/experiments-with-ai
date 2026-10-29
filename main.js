@@ -8,6 +8,8 @@ const VEHICLES = {
 };
 
 const CHARGING_RATE = 10;
+const MAX_BILLED_HOURS = 8;
+const PASS_DISCOUNT = 0.5;
 
 const SPOTS = [
   { id: 'S1', size: 'small' }, { id: 'S2', size: 'small' },
@@ -47,9 +49,18 @@ class ParkingLot {
 }
 
 class Pricing {
+  constructor() {
+    this.passes = new Set();
+  }
+
+  addPass(plate) {
+    this.passes.add(plate);
+  }
+
   fee(ticket, hours) {
     const charging = ticket.size === 'charging' ? CHARGING_RATE : 0;
-    return (VEHICLES[ticket.type].rate + charging) * hours;
+    const capped = (VEHICLES[ticket.type].rate + charging) * Math.min(hours, MAX_BILLED_HOURS);
+    return this.passes.has(ticket.plate) ? capped * PASS_DISCOUNT : capped;
   }
 }
 
@@ -61,6 +72,11 @@ class Cli {
 
   handle(line) {
     const [command, plate, arg, ...extra] = line.trim().split(/\s+/);
+    if (command === 'pass') {
+      if (plate === undefined || arg !== undefined) return 'INVALID';
+      this.pricing.addPass(plate);
+      return `PASS ${plate}`;
+    }
     if (arg === undefined || extra.length) return 'INVALID';
     if (command === 'park') return this.park(plate, arg);
     if (command === 'leave' || command === 'quote') return this.charge(command, plate, arg);
