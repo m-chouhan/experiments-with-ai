@@ -21,10 +21,13 @@ const HYPHENLOOSE_RE = new RegExp('^\\s{0,1}(' + XRANGEPLAINLOOSE + ')\\s{1,1}-\
 const COMPTRIM_RE = new RegExp('(\\s{0,1})((?:<|>)?=?)\\s{0,1}(' + LOOSEPLAIN + '|' + XRANGEPLAIN + ')', 'g')
 const TILDETRIM_RE = /(\s{0,1})(?:~>?)\s{1,1}/g
 const CARETTRIM_RE = /(\s{0,1})(?:\^)\s{1,1}/g
+const COMPATIBLETRIM_RE = /(\s{0,1})(?:~=)\s{1,1}/g
 const TILDE_RE = new RegExp('^(?:~>?)' + XRANGEPLAIN + '$')
 const TILDELOOSE_RE = new RegExp('^(?:~>?)' + XRANGEPLAINLOOSE + '$')
 const CARET_RE = new RegExp('^(?:\\^)' + XRANGEPLAIN + '$')
 const CARETLOOSE_RE = new RegExp('^(?:\\^)' + XRANGEPLAINLOOSE + '$')
+const COMPATIBLE_RE = new RegExp('^(?:~=)' + XRANGEPLAIN + '$')
+const COMPATIBLELOOSE_RE = new RegExp('^(?:~=)' + XRANGEPLAINLOOSE + '$')
 const XRANGE_RE = new RegExp('^((?:<|>)?=?)\\s{0,1}' + XRANGEPLAIN + '$')
 const XRANGELOOSE_RE = new RegExp('^((?:<|>)?=?)\\s{0,1}' + XRANGEPLAINLOOSE + '$')
 const COMPARATORLOOSE_RE = new RegExp('^((?:<|>)?=?)\\s{0,1}(' + LOOSEPLAIN + ')$|^$')
@@ -188,6 +191,8 @@ class Range {
     range = range.replace(TILDETRIM_RE, '$1~')
     // `^ 1.2.3` => `^1.2.3`
     range = range.replace(CARETTRIM_RE, '$1^')
+    // `~= 1.2.3` => `~=1.2.3`
+    range = range.replace(COMPATIBLETRIM_RE, '$1~=')
 
     // At this point, the range is completely trimmed and
     // ready to be split into comparators.
@@ -236,6 +241,29 @@ class Range {
           } else {
             ret = `>=${M}.${m}.${p} <${+M + 1}.0.0-0`
           }
+        }
+        return ret
+      })).join(' ')
+
+      // ~= (compatible release)
+      // ~=2, ~=2.x, ~=2.x.x --> >=2.0.0 <3.0.0-0
+      // ~=2.0, ~=2.0.x --> >=2.0.0 <3.0.0-0
+      // ~=1.2, ~=1.2.x --> >=1.2.0 <2.0.0-0
+      // ~=1.2.3 --> >=1.2.3 <1.3.0-0
+      // ~=0.0.1 --> >=0.0.1 <0.1.0-0
+      // ~=1.2.3-beta.1 --> >=1.2.3-beta.1 <1.3.0-0
+      comp = comp.trim().split(/\s+/).map((c) => c.replace(loose ? COMPATIBLELOOSE_RE : COMPATIBLE_RE, (_, M, m, p, pr) => {
+        let ret
+        if (!M || M.toLowerCase() === 'x' || M === '*') {
+          ret = ''
+        } else if (!m || m.toLowerCase() === 'x' || m === '*') {
+          ret = `>=${M}.0.0${z} <${+M + 1}.0.0-0`
+        } else if (!p || p.toLowerCase() === 'x' || p === '*') {
+          ret = `>=${M}.${m}.0${z} <${+M + 1}.0.0-0`
+        } else if (pr) {
+          ret = `>=${M}.${m}.${p}-${pr} <${M}.${+m + 1}.0-0`
+        } else {
+          ret = `>=${M}.${m}.${p} <${M}.${+m + 1}.0-0`
         }
         return ret
       })).join(' ')

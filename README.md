@@ -382,6 +382,21 @@ zero.
 * `^1.x` := `>=1.0.0 <2.0.0-0`
 * `^0.x` := `>=0.0.0 <1.0.0-0`
 
+#### Compatible Release Ranges `~=1.2.3` `~=1.2` `~=1`
+
+Allows the last (rightmost) component of the version to increase.
+All components to the left of the last one are fixed.
+
+* `~=1.2.3` := `>=1.2.3 <1.3.0-0`
+* `~=1.2` := `>=1.2.0 <2.0.0-0`
+* `~=1` := `>=1.0.0 <2.0.0-0`
+* `~=0.2.3` := `>=0.2.3 <0.3.0-0`
+* `~=0.2` := `>=0.2.0 <1.0.0-0`
+* `~=0` := `>=0.0.0 <1.0.0-0`
+* `~=1.2.3-beta.2` := `>=1.2.3-beta.2 <1.3.0-0` Note that prereleases in
+  the `1.2.3` version will be allowed, if they are greater than or
+  equal to `beta.2`.
+
 ### Range Grammar
 
 Putting all this together, here is a Backus-Naur grammar for ranges,
@@ -392,13 +407,14 @@ range-set  ::= range ( logical-or range ) *
 logical-or ::= ( ' ' ) * '||' ( ' ' ) *
 range      ::= hyphen | simple ( ' ' simple ) * | ''
 hyphen     ::= partial ' - ' partial
-simple     ::= primitive | partial | tilde | caret
+simple     ::= primitive | partial | tilde | caret | compatible
 primitive  ::= ( '<' | '>' | '>=' | '<=' | '=' ) partial
 partial    ::= xr ( '.' xr ( '.' xr qualifier ? )? )?
 xr         ::= 'x' | 'X' | '*' | nr
 nr         ::= '0' | ['1'-'9'] ( ['0'-'9'] ) *
 tilde      ::= '~' partial
 caret      ::= '^' partial
+compatible ::= '~=' partial
 qualifier  ::= ( '-' pre )? ( '+' build )?
 pre        ::= prepart ( '.' prepart ) *
 prepart    ::= nr | alphanumid
