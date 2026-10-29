@@ -4,15 +4,17 @@ Reads commands from stdin, one per line, and prints one line per command.
 
     node main.js < commands.txt
 
-Spots: S1 S2 (small), M1 M2 M3 (medium), L1 (large).
+Spots: C1 C2 (charging), S1 S2 (small), M1 M2 M3 (medium), L1 (large).
 
 | command | output |
 |---|---|
-| `park <plate> <bike\|car\|truck>` | `PARKED <plate> <spot>`, `ALREADY PARKED <plate>`, `FULL <plate>` |
+| `park <plate> <bike\|car\|truck\|ev>` | `PARKED <plate> <spot>`, `ALREADY PARKED <plate>`, `FULL <plate>` |
 | `leave <plate> <hours>` | `LEFT <plate> <spot> FEE <fee>`, `NOT FOUND <plate>` |
 | `quote <plate> <hours>` | `QUOTE <plate> FEE <fee>`, `NOT FOUND <plate>` |
 
-- A bike fits small, medium or large spots; a car medium or large; a truck only large.
-- A vehicle takes the smallest size that fits, lowest-numbered spot first.
-- Rates per hour: bike 10, car 20, truck 50. Hours are whole numbers, at least 1.
+- A bike fits small, medium or large spots; a car medium or large; a truck only large; an EV uses charging spots (C1, C2) if available, otherwise medium or large spots.
+- A vehicle takes the smallest size that fits, lowest-numbered spot first. EVs prefer charging spots before other spots.
+- Rates per hour: bike 10, car 20, truck 50, EV 20 (base) + 10 (charging). Hours are whole numbers, at least 1.
+- EVs in charging spots pay 30/hour total (20 base + 10 charging fee). EVs in regular spots pay 20/hour.
+- Only EVs can use charging spots; other vehicles cannot.
 - Anything malformed (unknown command or vehicle, wrong number of words, bad hours) prints `INVALID`. Blank lines are ignored.
