@@ -18,6 +18,7 @@ class ParkingLot {
   constructor(spots) {
     this.spots = spots;
     this.tickets = new Map();
+    this.passes = new Set();
   }
 
   park(plate, type) {
@@ -55,14 +56,31 @@ class ParkingLot {
     this.tickets.delete(plate);
     return ticket;
   }
+
+  registerPass(plate) {
+    this.passes.add(plate);
+  }
+
+  hasPass(plate) {
+    return this.passes.has(plate);
+  }
 }
 
 class Pricing {
+  constructor(lot) {
+    this.lot = lot;
+  }
+
   fee(ticket, hours) {
-    let baseFee = VEHICLES[ticket.type].rate * hours;
+    const cappedHours = Math.min(hours, 8);
+    let baseFee = VEHICLES[ticket.type].rate * cappedHours;
     // EVs in charging spots pay an additional charging fee
     if (ticket.type === 'ev' && (ticket.spot === 'C1' || ticket.spot === 'C2')) {
-      baseFee += 10 * hours;
+      baseFee += 10 * cappedHours;
+    }
+    // Apply 50% discount for vehicles with a pass
+    if (this.lot.hasPass(ticket.plate)) {
+      baseFee *= 0.5;
     }
     return baseFee;
   }
@@ -76,10 +94,19 @@ class Cli {
 
   handle(line) {
     const [command, plate, arg, ...extra] = line.trim().split(/\s+/);
+    if (command === 'pass') {
+      if (arg !== undefined || extra.length) return 'INVALID';
+      return this.pass(plate);
+    }
     if (arg === undefined || extra.length) return 'INVALID';
     if (command === 'park') return this.park(plate, arg);
     if (command === 'leave' || command === 'quote') return this.charge(command, plate, arg);
     return 'INVALID';
+  }
+
+  pass(plate) {
+    this.lot.registerPass(plate);
+    return `PASS ${plate}`;
   }
 
   park(plate, type) {
@@ -101,7 +128,8 @@ class Cli {
   }
 }
 
-const cli = new Cli(new ParkingLot(SPOTS), new Pricing());
+const lot = new ParkingLot(SPOTS);
+const cli = new Cli(lot, new Pricing(lot));
 for (const line of fs.readFileSync(0, 'utf8').split('\n')) {
   if (line.trim()) console.log(cli.handle(line));
 }
