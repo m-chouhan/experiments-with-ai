@@ -45,9 +45,14 @@ class Range {
     }
 
     if (range instanceof Range) {
+      const tagsA = range.options.prereleaseTags
+      const tagsB = options.prereleaseTags
+      const tagsSame = ((!tagsA || tagsA.length === 0) && (!tagsB || tagsB.length === 0)) ||
+        (tagsA && tagsB && tagsA.length === tagsB.length && tagsA.every((v, i) => v === tagsB[i]))
       if (
         range.loose === !!options.loose &&
-        range.includePrerelease === !!options.includePrerelease
+        range.includePrerelease === !!options.includePrerelease &&
+        tagsSame
       ) {
         return range
       } else {
@@ -438,6 +443,12 @@ class Range {
         continue
       }
       if (version.prerelease.length && !this.options.includePrerelease) {
+        // Check if the prerelease tag is in the prereleaseTags array
+        const prereleaseTags = this.options.prereleaseTags || []
+        if (prereleaseTags.length > 0 && version.prerelease.length > 0 &&
+          prereleaseTags.includes(String(version.prerelease[0]))) {
+          return true
+        }
         // Find the set of versions that are allowed to have prereleases
         // For example, ^1.2.3-pr.1 desugars to >=1.2.3-pr.1 <2.0.0
         // That should allow `1.2.3-pr.2` to pass.
