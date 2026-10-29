@@ -10,7 +10,8 @@ class Range {
     if (range instanceof Range) {
       if (
         range.loose === !!options.loose &&
-        range.includePrerelease === !!options.includePrerelease
+        range.includePrerelease === !!options.includePrerelease &&
+        arePrereleasTagsEqual(range.prereleaseTags, options.prereleaseTags)
       ) {
         return range
       } else {
@@ -29,6 +30,7 @@ class Range {
     this.options = options
     this.loose = !!options.loose
     this.includePrerelease = !!options.includePrerelease
+    this.prereleaseTags = options.prereleaseTags
 
     // First reduce all whitespace as much as possible so we do not have to rely
     // on potentially slow regexes like \s*. This is then stored and used for
@@ -548,6 +550,15 @@ const testSet = (set, version, options) => {
   }
 
   if (version.prerelease.length && !options.includePrerelease) {
+    // Check if this prerelease should be allowed via prereleaseTags
+    const prereleaseTags = options.prereleaseTags
+    if (prereleaseTags && prereleaseTags.length > 0) {
+      const firstTag = version.prerelease[0]
+      if (prereleaseTags.includes(firstTag)) {
+        return true
+      }
+    }
+
     // Find the set of versions that are allowed to have prereleases
     // For example, ^1.2.3-pr.1 desugars to >=1.2.3-pr.1 <2.0.0
     // That should allow `1.2.3-pr.2` to pass.
@@ -573,5 +584,23 @@ const testSet = (set, version, options) => {
     return false
   }
 
+  return true
+}
+
+const arePrereleasTagsEqual = (tags1, tags2) => {
+  if (tags1 === tags2) {
+    return true
+  }
+  if (!tags1 || !tags2) {
+    return !tags1 && !tags2
+  }
+  if (tags1.length !== tags2.length) {
+    return false
+  }
+  for (let i = 0; i < tags1.length; i++) {
+    if (tags1[i] !== tags2[i]) {
+      return false
+    }
+  }
   return true
 }
