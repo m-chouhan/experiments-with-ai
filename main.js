@@ -4,9 +4,11 @@ const VEHICLES = {
   bike: { rate: 10, fits: ['small', 'medium', 'large'] },
   car: { rate: 20, fits: ['medium', 'large'] },
   truck: { rate: 50, fits: ['large'] },
+  ev: { rate: 20, fits: ['medium', 'large'], charging: 10 },
 };
 
 const SPOTS = [
+  { id: 'C1', charging: true, size: 'medium' }, { id: 'C2', charging: true, size: 'medium' },
   { id: 'S1', size: 'small' }, { id: 'S2', size: 'small' },
   { id: 'M1', size: 'medium' }, { id: 'M2', size: 'medium' }, { id: 'M3', size: 'medium' },
   { id: 'L1', size: 'large' },
@@ -20,8 +22,18 @@ class ParkingLot {
 
   park(plate, type) {
     const taken = new Set([...this.tickets.values()].map((t) => t.spot));
+
+    if (type === 'ev') {
+      const chargingSpot = this.spots.find((s) => s.charging && !taken.has(s.id));
+      if (chargingSpot) {
+        const ticket = { plate, type, spot: chargingSpot.id, charging: true };
+        this.tickets.set(plate, ticket);
+        return ticket;
+      }
+    }
+
     for (const size of VEHICLES[type].fits) {
-      const spot = this.spots.find((s) => s.size === size && !taken.has(s.id));
+      const spot = this.spots.find((s) => !s.charging && s.size === size && !taken.has(s.id));
       if (spot) {
         const ticket = { plate, type, spot: spot.id };
         this.tickets.set(plate, ticket);
@@ -44,7 +56,11 @@ class ParkingLot {
 
 class Pricing {
   fee(ticket, hours) {
-    return VEHICLES[ticket.type].rate * hours;
+    let total = VEHICLES[ticket.type].rate * hours;
+    if (ticket.charging) {
+      total += VEHICLES[ticket.type].charging * hours;
+    }
+    return total;
   }
 }
 
