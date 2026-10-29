@@ -4,12 +4,14 @@ const VEHICLES = {
   bike: { rate: 10, fits: ['small', 'medium', 'large'] },
   car: { rate: 20, fits: ['medium', 'large'] },
   truck: { rate: 50, fits: ['large'] },
+  ev: { rate: 20, fits: ['charging', 'medium', 'large'], chargingFee: 10 },
 };
 
 const SPOTS = [
   { id: 'S1', size: 'small' }, { id: 'S2', size: 'small' },
   { id: 'M1', size: 'medium' }, { id: 'M2', size: 'medium' }, { id: 'M3', size: 'medium' },
   { id: 'L1', size: 'large' },
+  { id: 'C1', size: 'charging' }, { id: 'C2', size: 'charging' },
 ];
 
 class ParkingLot {
@@ -44,7 +46,11 @@ class ParkingLot {
 
 class Pricing {
   fee(ticket, hours) {
-    return VEHICLES[ticket.type].rate * hours;
+    let fee = VEHICLES[ticket.type].rate * hours;
+    if (ticket.spot.startsWith('C') && VEHICLES[ticket.type].chargingFee) {
+      fee += VEHICLES[ticket.type].chargingFee * hours;
+    }
+    return fee;
   }
 }
 
