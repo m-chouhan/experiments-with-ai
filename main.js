@@ -8,6 +8,28 @@ const chargingSpots = ['C1', 'C2'];
 let parked = {};
 let usedSpots = [];
 let usedChargingSpots = [];
+let passes = {}; // Track vehicles with monthly passes
+
+function calculateFee(type, hours, hasPass, isCharging) {
+  // Cap hours at 8
+  const cappedHours = Math.min(hours, 8);
+  
+  let fee = 0;
+  if (type === 'bike') fee = cappedHours * 10;
+  else if (type === 'car') fee = cappedHours * 20;
+  else if (type === 'truck') fee = cappedHours * 50;
+  else if (type === 'ev') {
+    fee = cappedHours * 20; // car rate
+    if (isCharging) fee += cappedHours * 10; // charging fee
+  }
+  
+  // Apply 50% discount for pass holders after the cap
+  if (hasPass) {
+    fee = Math.floor(fee / 2);
+  }
+  
+  return fee;
+}
 
 function park(plate, type) {
   if (parked[plate]) {
@@ -65,15 +87,9 @@ function leave(plate, hoursText) {
   const type = parked[plate].type;
   const spot = parked[plate].spot;
   const charging = parked[plate].charging;
+  const hasPass = passes[plate] !== undefined;
   
-  let fee = 0;
-  if (type === 'bike') fee = hours * 10;
-  else if (type === 'car') fee = hours * 20;
-  else if (type === 'truck') fee = hours * 50;
-  else if (type === 'ev') {
-    fee = hours * 20; // car rate
-    if (charging) fee += hours * 10; // charging fee
-  }
+  const fee = calculateFee(type, hours, hasPass, charging);
   
   if (charging) {
     usedChargingSpots = usedChargingSpots.filter((s) => s !== spot);
@@ -97,17 +113,16 @@ function quote(plate, hoursText) {
   }
   const type = parked[plate].type;
   const charging = parked[plate].charging;
+  const hasPass = passes[plate] !== undefined;
   
-  let fee = 0;
-  if (type === 'bike') fee = hours * 10;
-  else if (type === 'car') fee = hours * 20;
-  else if (type === 'truck') fee = hours * 50;
-  else if (type === 'ev') {
-    fee = hours * 20; // car rate
-    if (charging) fee += hours * 10; // charging fee
-  }
+  const fee = calculateFee(type, hours, hasPass, charging);
   
   console.log('QUOTE ' + plate + ' FEE ' + fee);
+}
+
+function registerPass(plate) {
+  passes[plate] = true;
+  console.log('PASS ' + plate);
 }
 
 const lines = fs.readFileSync(0, 'utf8').split('\n');
@@ -117,5 +132,6 @@ for (const line of lines) {
   if (parts[0] === 'park' && parts.length === 3) park(parts[1], parts[2]);
   else if (parts[0] === 'leave' && parts.length === 3) leave(parts[1], parts[2]);
   else if (parts[0] === 'quote' && parts.length === 3) quote(parts[1], parts[2]);
+  else if (parts[0] === 'pass' && parts.length === 2) registerPass(parts[1]);
   else console.log('INVALID');
 }
