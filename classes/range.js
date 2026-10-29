@@ -66,6 +66,7 @@ class Range {
     this.options = options
     this.loose = !!options.loose
     this.includePrerelease = !!options.includePrerelease
+    this.prereleaseTags = options.prereleaseTags || []
 
     // First reduce all whitespace as much as possible so we do not have to rely
     // on potentially slow regexes like \s*. This is then stored and used for
@@ -140,7 +141,8 @@ class Range {
 
     // memoize range parsing for performance.
     // this is a very hot path, and fully deterministic.
-    const memoKey = ((this.options.includePrerelease && 1) | (this.options.loose && 2)) + ':' + range
+    const prereleaseTags = (this.options.prereleaseTags || []).join('|')
+    const memoKey = ((this.options.includePrerelease && 1) | (this.options.loose && 2)) + ':' + prereleaseTags + ':' + range
     const cached = rangeCache.get(memoKey)
     if (cached !== undefined) {
       rangeCache.delete(memoKey)
@@ -438,6 +440,14 @@ class Range {
         continue
       }
       if (version.prerelease.length && !this.options.includePrerelease) {
+        // Check if prerelease tag is in the prereleaseTags list
+        if (this.options.prereleaseTags && this.options.prereleaseTags.length > 0) {
+          const prereleaseTags = this.options.prereleaseTags
+          const versionTag = version.prerelease[0]
+          if (prereleaseTags.includes(versionTag)) {
+            return true
+          }
+        }
         // Find the set of versions that are allowed to have prereleases
         // For example, ^1.2.3-pr.1 desugars to >=1.2.3-pr.1 <2.0.0
         // That should allow `1.2.3-pr.2` to pass.

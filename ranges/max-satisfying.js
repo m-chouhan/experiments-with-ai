@@ -35,15 +35,26 @@ const maxSatisfying = (versions, range, options) => {
           }
         }
         if (pass && sv.prerelease.length && !rangeObj.options.includePrerelease) {
-          // only allow a prerelease if some comparator in this set has one on the same tuple
-          pass = false
-          for (let j = 0; j < set.length; j++) {
-            if (set[j].semver !== Comparator.ANY && set[j].semver.prerelease.length > 0 &&
-              set[j].semver.major === sv.major &&
-              set[j].semver.minor === sv.minor &&
-              set[j].semver.patch === sv.patch) {
+          // Check if prerelease tag is in the prereleaseTags list
+          if (rangeObj.options.prereleaseTags && rangeObj.options.prereleaseTags.length > 0) {
+            const prereleaseTags = rangeObj.options.prereleaseTags
+            const versionTag = sv.prerelease[0]
+            if (prereleaseTags.includes(versionTag)) {
               pass = true
-              break
+            } else {
+              pass = false
+            }
+          } else {
+            // only allow a prerelease if some comparator in this set has one on the same tuple
+            pass = false
+            for (let j = 0; j < set.length; j++) {
+              if (set[j].semver !== Comparator.ANY && set[j].semver.prerelease.length > 0 &&
+                set[j].semver.major === sv.major &&
+                set[j].semver.minor === sv.minor &&
+                set[j].semver.patch === sv.patch) {
+                pass = true
+                break
+              }
             }
           }
         }
