@@ -14,8 +14,8 @@ const SPOTS = [
 
 const COMMANDS = {
   park: { args: ['plate', 'type'], run: (cli, plate, type) => cli.park(plate, type) },
-  leave: { args: ['plate', 'hours'], run: (cli, plate, hours) => cli.charge('leave', plate, hours) },
-  quote: { args: ['plate', 'hours'], run: (cli, plate, hours) => cli.charge('quote', plate, hours) },
+  leave: { args: ['plate', 'hours'], run: (cli, plate, hours) => cli.leave(plate, hours) },
+  quote: { args: ['plate', 'hours'], run: (cli, plate, hours) => cli.quote(plate, hours) },
 };
 
 class ParkingLot {
@@ -29,7 +29,7 @@ class ParkingLot {
     for (const size of VEHICLES[type].fits) {
       const spot = this.spots.find((s) => s.size === size && !taken.has(s.id));
       if (spot) {
-        const ticket = { plate, type, spot: spot.id };
+        const ticket = { type, spot: spot.id };
         this.tickets.set(plate, ticket);
         return ticket;
       }
@@ -42,9 +42,7 @@ class ParkingLot {
   }
 
   leave(plate) {
-    const ticket = this.tickets.get(plate);
     this.tickets.delete(plate);
-    return ticket;
   }
 }
 
@@ -61,7 +59,7 @@ class Cli {
   }
 
   handle(line) {
-    const [name, ...args] = line.trim().split(/\s+/);
+    const [name, ...args] = line.split(/\s+/);
     const command = COMMANDS[name];
     if (!command || args.length !== command.args.length) return 'INVALID';
     return command.run(this, ...args);
@@ -74,19 +72,29 @@ class Cli {
     return ticket ? `PARKED ${plate} ${ticket.spot}` : `FULL ${plate}`;
   }
 
-  charge(command, plate, hoursText) {
-    const hours = Number(hoursText);
-    if (!Number.isInteger(hours) || hours < 1) return 'INVALID';
-    const ticket = this.lot.find(plate);
-    if (!ticket) return `NOT FOUND ${plate}`;
-    const fee = this.pricing.fee(ticket, hours);
-    if (command === 'quote') return `QUOTE ${plate} FEE ${fee}`;
+  leave(plate, hoursText) {
+    const bill = this.bill(plate, hoursText);
+    if (bill.error) return bill.error;
     this.lot.leave(plate);
-    return `LEFT ${plate} ${ticket.spot} FEE ${fee}`;
+    return `LEFT ${plate} ${bill.ticket.spot} FEE ${bill.fee}`;
+  }
+
+  quote(plate, hoursText) {
+    const bill = this.bill(plate, hoursText);
+    return bill.error || `QUOTE ${plate} FEE ${bill.fee}`;
+  }
+
+  bill(plate, hoursText) {
+    const hours = Number(hoursText);
+    if (!Number.isInteger(hours) || hours < 1) return { error: 'INVALID' };
+    const ticket = this.lot.find(plate);
+    if (!ticket) return { error: `NOT FOUND ${plate}` };
+    return { ticket, fee: this.pricing.fee(ticket, hours) };
   }
 }
 
 const cli = new Cli(new ParkingLot(SPOTS), new Pricing());
-for (const line of fs.readFileSync(0, 'utf8').split('\n')) {
-  if (line.trim()) console.log(cli.handle(line));
+for (const raw of fs.readFileSync(0, 'utf8').split('\n')) {
+  const line = raw.trim();
+  if (line) console.log(cli.handle(line));
 }
