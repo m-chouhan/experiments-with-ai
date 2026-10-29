@@ -1,8 +1,0 @@
-pass XYZ
-park XYZ ev
-quote XYZ 5
-quote XYZ 10
-leave XYZ 10
-pass ABC
-pass ABC
-quote ABC 1
