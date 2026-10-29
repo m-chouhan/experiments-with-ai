@@ -18,6 +18,7 @@ class ParkingLot {
   constructor(spots) {
     this.spots = spots;
     this.tickets = new Map();
+    this.passes = new Set();
   }
 
   park(plate, type) {
@@ -42,13 +43,25 @@ class ParkingLot {
     this.tickets.delete(plate);
     return ticket;
   }
+
+  registerPass(plate) {
+    this.passes.add(plate);
+  }
+
+  hasPass(plate) {
+    return this.passes.has(plate);
+  }
 }
 
 class Pricing {
-  fee(ticket, hours) {
-    let fee = VEHICLES[ticket.type].rate * hours;
+  fee(ticket, hours, hasPass) {
+    const cappedHours = Math.min(hours, 8);
+    let fee = VEHICLES[ticket.type].rate * cappedHours;
     if (ticket.spot.startsWith('C') && VEHICLES[ticket.type].chargingFee) {
-      fee += VEHICLES[ticket.type].chargingFee * hours;
+      fee += VEHICLES[ticket.type].chargingFee * cappedHours;
+    }
+    if (hasPass) {
+      fee = Math.floor(fee / 2);
     }
     return fee;
   }
@@ -62,9 +75,19 @@ class Cli {
 
   handle(line) {
     const [command, plate, arg, ...extra] = line.trim().split(/\s+/);
-    if (arg === undefined || extra.length) return 'INVALID';
-    if (command === 'park') return this.park(plate, arg);
-    if (command === 'leave' || command === 'quote') return this.charge(command, plate, arg);
+    if (extra.length) return 'INVALID';
+    if (command === 'park') {
+      if (arg === undefined) return 'INVALID';
+      return this.park(plate, arg);
+    }
+    if (command === 'leave' || command === 'quote') {
+      if (arg === undefined) return 'INVALID';
+      return this.charge(command, plate, arg);
+    }
+    if (command === 'pass') {
+      if (arg !== undefined) return 'INVALID';
+      return this.registerPass(plate);
+    }
     return 'INVALID';
   }
 
@@ -80,10 +103,16 @@ class Cli {
     if (!Number.isInteger(hours) || hours < 1) return 'INVALID';
     const ticket = this.lot.find(plate);
     if (!ticket) return `NOT FOUND ${plate}`;
-    const fee = this.pricing.fee(ticket, hours);
+    const hasPass = this.lot.hasPass(plate);
+    const fee = this.pricing.fee(ticket, hours, hasPass);
     if (command === 'quote') return `QUOTE ${plate} FEE ${fee}`;
     this.lot.leave(plate);
     return `LEFT ${plate} ${ticket.spot} FEE ${fee}`;
+  }
+
+  registerPass(plate) {
+    this.lot.registerPass(plate);
+    return `PASS ${plate}`;
   }
 }
 
