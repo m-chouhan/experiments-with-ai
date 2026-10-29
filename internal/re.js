@@ -192,6 +192,16 @@ exports.caretTrimReplace = '$1^'
 createToken('CARET', `^${src[t.LONECARET]}${src[t.XRANGEPLAIN]}$`)
 createToken('CARETLOOSE', `^${src[t.LONECARET]}${src[t.XRANGEPLAINLOOSE]}$`)
 
+// Compatible release ranges.
+// Meaning is "compatible release"
+createToken('LONECOMPATIBLE', '(?:~=)')
+
+createToken('COMPATIBLETRIM', `(\\s*)${src[t.LONECOMPATIBLE]}\\s+`, true)
+exports.compatibleTrimReplace = '$1~='
+
+createToken('COMPATIBLE', `^${src[t.LONECOMPATIBLE]}${src[t.XRANGEPLAIN]}$`)
+createToken('COMPATIBLELOOSE', `^${src[t.LONECOMPATIBLE]}${src[t.XRANGEPLAINLOOSE]}$`)
+
 // A simple gt/lt/eq thing, or just "" to indicate "any version"
 createToken('COMPARATORLOOSE', `^${src[t.GTLT]}\\s*(${src[t.LOOSEPLAIN]})$|^$`)
 createToken('COMPARATOR', `^${src[t.GTLT]}\\s*(${src[t.FULLPLAIN]})$|^$`)

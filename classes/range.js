@@ -130,6 +130,10 @@ class Range {
     range = range.replace(re[t.CARETTRIM], caretTrimReplace)
     debug('caret trim', range)
 
+    // `~= 1.2.3` => `~=1.2.3`
+    range = range.replace(re[t.COMPATIBLETRIM], compatibleTrimReplace)
+    debug('compatible trim', range)
+
     // At this point, the range is completely trimmed and
     // ready to be split into comparators.
 
@@ -231,6 +235,7 @@ const {
   comparatorTrimReplace,
   tildeTrimReplace,
   caretTrimReplace,
+  compatibleTrimReplace,
 } = require('../internal/re')
 const { FLAG_INCLUDE_PRERELEASE, FLAG_LOOSE } = require('../internal/constants')
 
@@ -266,6 +271,8 @@ const parseComparator = (comp, options) => {
   debug('comp', comp, options)
   comp = replaceCarets(comp, options)
   debug('caret', comp)
+  comp = replaceCompatibleReleases(comp, options)
+  debug('compatible', comp)
   comp = replaceTildes(comp, options)
   debug('tildes', comp)
   comp = replaceXRanges(comp, options)
@@ -394,6 +401,47 @@ const replaceCaret = (comp, options) => {
     }
 
     debug('caret return', ret)
+    return ret
+  })
+}
+
+// ~=1.2.3 --> >=1.2.3 <1.3.0-0
+// ~=1.2 --> >=1.2.0 <2.0.0-0
+// ~=1 --> >=1.0.0 <2.0.0-0
+const replaceCompatibleReleases = (comp, options) => {
+  return comp
+    .trim()
+    .split(/\s+/)
+    .map((c) => replaceCompatibleRelease(c, options))
+    .join(' ')
+}
+
+const replaceCompatibleRelease = (comp, options) => {
+  const r = options.loose ? re[t.COMPATIBLELOOSE] : re[t.COMPATIBLE]
+  const z = options.includePrerelease ? '-0' : ''
+  return comp.replace(r, (_, M, m, p, pr) => {
+    debug('compatible', comp, _, M, m, p, pr)
+    let ret
+
+    if (isX(M)) {
+      ret = ''
+    } else if (isX(m)) {
+      // ~=1 --> >=1.0.0 <2.0.0-0
+      ret = `>=${M}.0.0${z} <${+M + 1}.0.0-0`
+    } else if (isX(p)) {
+      // ~=1.2 --> >=1.2.0 <2.0.0-0
+      ret = `>=${M}.${m}.0${z} <${+M + 1}.0.0-0`
+    } else if (pr) {
+      // ~=1.2.3-beta.2 --> >=1.2.3-beta.2 <1.3.0-0
+      ret = `>=${M}.${m}.${p}-${pr
+      } <${M}.${+m + 1}.0-0`
+    } else {
+      // ~=1.2.3 --> >=1.2.3 <1.3.0-0
+      ret = `>=${M}.${m}.${p
+      } <${M}.${+m + 1}.0-0`
+    }
+
+    debug('compatible return', ret)
     return ret
   })
 }
