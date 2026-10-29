@@ -31,15 +31,21 @@ const satisfies = (version, range, options) => {
         }
       }
       if (pass && sv.prerelease.length && !range.options.includePrerelease) {
-        // only allow a prerelease if some comparator in this set has one on the same tuple
-        pass = false
-        for (let j = 0; j < set.length; j++) {
-          if (set[j].semver !== Comparator.ANY && set[j].semver.prerelease.length > 0 &&
-            set[j].semver.major === sv.major &&
-            set[j].semver.minor === sv.minor &&
-            set[j].semver.patch === sv.patch) {
-            pass = true
-            break
+        const isPreleaseTag = require('../internal/is-prerelease-tag')
+        // If prereleaseTags is set, allow versions with matching tags
+        if (range.prereleaseTags && isPreleaseTag(sv.prerelease, range.prereleaseTags)) {
+          pass = true
+        } else {
+          // only allow a prerelease if some comparator in this set has one on the same tuple
+          pass = false
+          for (let j = 0; j < set.length; j++) {
+            if (set[j].semver !== Comparator.ANY && set[j].semver.prerelease.length > 0 &&
+              set[j].semver.major === sv.major &&
+              set[j].semver.minor === sv.minor &&
+              set[j].semver.patch === sv.patch) {
+              pass = true
+              break
+            }
           }
         }
       }

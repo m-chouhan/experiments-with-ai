@@ -47,7 +47,8 @@ class Range {
     if (range instanceof Range) {
       if (
         range.loose === !!options.loose &&
-        range.includePrerelease === !!options.includePrerelease
+        range.includePrerelease === !!options.includePrerelease &&
+        range.prereleaseTags === options.prereleaseTags
       ) {
         return range
       } else {
@@ -66,6 +67,7 @@ class Range {
     this.options = options
     this.loose = !!options.loose
     this.includePrerelease = !!options.includePrerelease
+    this.prereleaseTags = options.prereleaseTags
 
     // First reduce all whitespace as much as possible so we do not have to rely
     // on potentially slow regexes like \s*. This is then stored and used for
@@ -140,7 +142,7 @@ class Range {
 
     // memoize range parsing for performance.
     // this is a very hot path, and fully deterministic.
-    const memoKey = ((this.options.includePrerelease && 1) | (this.options.loose && 2)) + ':' + range
+    const memoKey = ((this.options.includePrerelease && 1) | (this.options.loose && 2)) + ':' + (this.options.prereleaseTags ? JSON.stringify(this.options.prereleaseTags) : '') + ':' + range
     const cached = rangeCache.get(memoKey)
     if (cached !== undefined) {
       rangeCache.delete(memoKey)
@@ -438,6 +440,11 @@ class Range {
         continue
       }
       if (version.prerelease.length && !this.options.includePrerelease) {
+        const isPreleaseTag = require('../internal/is-prerelease-tag')
+        // If prereleaseTags is set, allow versions with matching tags
+        if (this.prereleaseTags && isPreleaseTag(version.prerelease, this.prereleaseTags)) {
+          return true
+        }
         // Find the set of versions that are allowed to have prereleases
         // For example, ^1.2.3-pr.1 desugars to >=1.2.3-pr.1 <2.0.0
         // That should allow `1.2.3-pr.2` to pass.
