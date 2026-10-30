@@ -76,6 +76,7 @@ Results:
 - `results/v2/` — Haiku ×3 on the fixed mature baseline, still with Claude Code's default prompt and tools.
 - `results/v3/` — Haiku ×3 on parking with a one-line system prompt and three minimal tools (`read_file`, `write_file`, `run_command`) instead of Claude Code's defaults.
 - `results/v4/` — semver, Haiku: T2 and T4 ×2 per version, plus a single T2 pilot (`pilot/`).
+- `results/v5/` — parking rerun, Haiku with Claude Code defaults ×2 per version; no difference in tokens or steps (`node analysis/trajectory.mjs results/v5/transcripts`).
 - `analysis/reports/` — duplication and dependency HTML reports and CodeCharta maps for good and bad.
 
 `archive/tictactoe-pilot/` holds the earlier tic-tac-toe pilot.

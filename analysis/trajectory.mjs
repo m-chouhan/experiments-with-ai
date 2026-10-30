@@ -1,8 +1,8 @@
 // Step-level metrics from saved transcripts: what the agent spent its steps on.
-// Usage: node analysis/trajectory.mjs <transcripts dir>...   (finds every semver *.jsonl below)
+// Usage: node analysis/trajectory.mjs <transcripts dir>...   (finds every semver or parking *.jsonl below)
 // Per run: turns, tool calls by kind, distinct source files read, re-reads of a file already
 // read (SonarSource's "revisits"), test runs, and how many of the reference solution's files
-// the agent edited (and edits outside them).
+// the agent edited (and edits outside them; semver only, parking is a single main.js).
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -15,19 +15,19 @@ const referenceFiles = (version, task) => {
 }
 
 const jsonlFiles = (dir) => fs.readdirSync(dir, { recursive: true })
-  .filter((f) => f.endsWith('.jsonl') && f.includes('semver')).map((f) => path.join(dir, f))
+  .filter((f) => f.endsWith('.jsonl') && /semver|parking/.test(f)).map((f) => path.join(dir, f))
 
 // Workdir-relative path of a tool's file argument, or null for scratch files outside the project.
 const rel = (p) => {
-  const m = /\/T\/semver-(?:good|bad)-[^/]+\/(.+)$/.exec(p ?? '')
+  const m = /\/T\/(?:semver|parking)-(?:good|bad|junior|mature)-[^/]+\/(.+)$/.exec(p ?? '')
   return m ? m[1] : null
 }
-const isLibFile = (f) => f && /^(classes|functions|internal|ranges)\/[^/]+\.js$|^index\.js$/.test(f)
+const isLibFile = (f) => f && /^(classes|functions|internal|ranges)\/[^/]+\.js$|^index\.js$|^main\.js$/.test(f)
 
 const rows = []
 for (const dir of process.argv.slice(2)) {
   for (const file of jsonlFiles(dir)) {
-    const [, version, run] = /(good|bad)-(\d+)/.exec(file)
+    const [, version, run] = /(good|bad|junior|mature)-(\d+)/.exec(file)
     const task = path.basename(file, '.jsonl')
     const label = file.includes('pilot') ? 'pilot' : run
     const events = fs.readFileSync(file, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l))
@@ -37,8 +37,8 @@ for (const dir of process.argv.slice(2)) {
     const reads = calls.filter((c) => c.name === 'Read').map((c) => rel(c.input.file_path)).filter(isLibFile)
     const readCounts = reads.reduce((m, f) => m.set(f, (m.get(f) ?? 0) + 1), new Map())
     const edited = new Set(calls.filter((c) => c.name === 'Edit' || c.name === 'Write').map((c) => rel(c.input.file_path)).filter(isLibFile))
-    const ref = referenceFiles(version, task)
-    const refLib = [...ref].filter(isLibFile)
+    const ref = file.includes('semver') ? referenceFiles(version, task) : null
+    const refLib = ref ? [...ref].filter(isLibFile) : []
     const bash = calls.filter((c) => c.name === 'Bash').map((c) => c.input.command)
 
     rows.push({
@@ -52,8 +52,8 @@ for (const dir of process.argv.slice(2)) {
       edits: calls.filter((c) => c.name === 'Edit' || c.name === 'Write').length,
       scratch_files: calls.filter((c) => c.name === 'Write' && !isLibFile(rel(c.input.file_path)) && !/README/.test(c.input.file_path)).length,
       test_runs: bash.filter((b) => /\b(npm (run )?test|tap|node --test)\b/.test(b)).length,
-      ref_files_edited: `${refLib.filter((f) => edited.has(f)).length}/${refLib.length}`,
-      other_files_edited: [...edited].filter((f) => !ref.has(f)).length,
+      ref_files_edited: ref ? `${refLib.filter((f) => edited.has(f)).length}/${refLib.length}` : '-',
+      other_files_edited: ref ? [...edited].filter((f) => !ref.has(f)).length : '-',
       tokens: Object.values(result.modelUsage ?? {}).reduce((n, m) => n + m.inputTokens + m.outputTokens + m.cacheReadInputTokens + m.cacheCreationInputTokens, 0),
     })
   }
