@@ -29,7 +29,8 @@ class Comparator {
     }
 
     if (comp instanceof Comparator) {
-      if (comp.loose === !!options.loose) {
+      if (comp.loose === !!options.loose &&
+        !!comp.options.naturalPrerelease === !!options.naturalPrerelease) {
         return comp
       } else {
         comp = comp.value
@@ -68,7 +69,7 @@ class Comparator {
     if (!m[2]) {
       this.semver = ANY
     } else {
-      this.semver = new SemVer(m[2], this.options.loose)
+      this.semver = new SemVer(m[2], this.options)
     }
   }
 

@@ -47,7 +47,8 @@ class Range {
     if (range instanceof Range) {
       if (
         range.loose === !!options.loose &&
-        range.includePrerelease === !!options.includePrerelease
+        range.includePrerelease === !!options.includePrerelease &&
+        !!range.options.naturalPrerelease === !!options.naturalPrerelease
       ) {
         return range
       } else {
@@ -140,7 +141,7 @@ class Range {
 
     // memoize range parsing for performance.
     // this is a very hot path, and fully deterministic.
-    const memoKey = ((this.options.includePrerelease && 1) | (this.options.loose && 2)) + ':' + range
+    const memoKey = ((this.options.includePrerelease && 1) | (this.options.loose && 2) | (this.options.naturalPrerelease && 4)) + ':' + range
     const cached = rangeCache.get(memoKey)
     if (cached !== undefined) {
       rangeCache.delete(memoKey)
