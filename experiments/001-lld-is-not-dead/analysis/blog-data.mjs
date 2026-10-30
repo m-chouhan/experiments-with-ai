@@ -3,6 +3,8 @@
 // context-per-turn.json: for the median good and bad Haiku runs of task 2, how many tokens each turn
 // sent (the whole conversation so far) and what the agent asked for in that turn.
 // consolidated-results.json: the README's "Consolidated results" section, so its tables stay the one copy.
+// agent-steps.json: every tool call of good run 1 and the failed bad run 2 of task 2, as a step
+// (search, read, edit, test, other) and the library file it touched.
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -64,3 +66,35 @@ const tables = section.split(/\n\s*\n/).filter((block) => block.trim().startsWit
 const [trials, rounds] = tables
 write('consolidated-results.json', { trials, rounds })
 console.log(`consolidated: ${trials.rows.length} rows, ${rounds.rows.length} rounds`)
+
+// Same file and test-run rules as trajectory.mjs, so the replay counts what its table counts
+const isLibFile = (f) => f && /^(classes|functions|internal|ranges)\/[^/]+\.js$|^index\.js$/.test(f)
+const isTestRun = (command) => /\b(npm (run )?test|tap|node --test)\b/.test(command)
+const isSearch = (command) => /^\s*(grep|rg|find)\b/.test(command)
+
+// In bad run 2 these edits rewrote the prerelease rule's pasted copies so the old same-tuple rule
+// only runs when prereleaseTags is unset; the Range#test copy kept it. The hidden tests caught satisfies.js.
+const REPLACED_OLD_RULE = ['functions/satisfies.js', 'ranges/max-satisfying.js', 'ranges/min-satisfying.js']
+
+const STEP_RUNS = {
+  good: { label: 'good, run 1', file: 'transcripts/haiku/semver/good-1/t2-prerelease-tags.jsonl', passed: true },
+  bad: { label: 'bad, run 2', file: 'transcripts/haiku/semver/bad-2/t2-prerelease-tags.jsonl', passed: false },
+}
+
+const stepsOf = (file, broken) => {
+  const events = transcript.parse(fs.readFileSync(path.join(transcripts, file), 'utf8'))
+  const cwd = transcript.workdir(events)
+  const rel = (p) => path.relative(cwd, path.resolve(cwd, p))
+  return transcript.toolCalls(events).map(({ name, input }) => {
+    if (name === 'Grep' || name === 'Glob') return { kind: 'search' }
+    if (name === 'Bash') return { kind: isTestRun(input.command) ? 'test' : isSearch(input.command) ? 'search' : 'other' }
+    const target = rel(input.file_path)
+    if (!isLibFile(target)) return { kind: name === 'Read' ? 'read' : 'other' }
+    if (name === 'Read') return { kind: 'read', file: target }
+    return { kind: 'edit', file: target, ...(broken.includes(target) && { broke: true }) }
+  })
+}
+
+write('agent-steps.json', Object.fromEntries(Object.entries(STEP_RUNS).map(([variant, { label, file, passed }]) =>
+  [variant, { label, passed, steps: stepsOf(file, passed ? [] : REPLACED_OLD_RULE) }])))
+console.log('agent steps: good run 1, bad run 2')

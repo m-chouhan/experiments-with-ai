@@ -222,7 +222,9 @@ Tokens tell you *how much* the agent spent. But I saved the full transcript of e
 
 **Edits are the clearest signal.** Searching and reading look about the same on both versions: the agent finds its way around either codebase just fine. But on bad it needed **about 2.5× more edits** (a median of 13 vs 5), which is exactly the four copies showing up in its work. (On the control task, edits were the same on both: 9–13 vs 9–11.)
 
-And look at the last row. **Every bad run edited all four copies**, including the one that failed. The agent didn't *miss* a copy. It found them all, and got one of them wrong. So "did it touch the right places?" isn't enough to judge an agent. On duplicated code, finding every copy is the easy part. Changing every copy correctly is where it slips.
+And look at the last row. **Every bad run edited all four copies**, including the one that failed. The agent didn't *miss* a copy. It found them all, and got three of them wrong. The tests caught only one. So "did it touch the right places?" isn't enough to judge an agent. On duplicated code, finding every copy is the easy part. Changing every copy correctly is where it slips.
+
+<!-- interactive: readers replay a good and a bad run side by side, step by step, and watch which files the agent reads and edits, and which of its edits broke the old rule -->
 
 > **🐇 Rabbit hole: what about re-reads?**
 >
@@ -269,7 +271,6 @@ Every trial I ran, with its tokens, cost, edits and test runs, is in the [repo R
 This was a small experiment, and I want to make it less small:
 
 - **More runs per task** (5+), to get past the noise.
-- **Task 3** (natural ordering), where the gap is biggest: 3 edit sites in good vs 21 in bad. If design matters anywhere, it should show there.
 - **A stronger model** (Sonnet) and **local models** (I tried Ollama with Qwen 14B on my laptop, but it managed about 1 token per second, hehe).
 
 If you have ideas for better tasks, a better "bad" twin, or another project to try, tell me in the comments. I'd love to make this more rigorous :)
