@@ -47,7 +47,8 @@ class Range {
     if (range instanceof Range) {
       if (
         range.loose === !!options.loose &&
-        range.includePrerelease === !!options.includePrerelease
+        range.includePrerelease === !!options.includePrerelease &&
+        range.options.prereleaseTags === options.prereleaseTags
       ) {
         return range
       } else {
@@ -437,7 +438,8 @@ class Range {
       if (!pass) {
         continue
       }
-      if (version.prerelease.length && !this.options.includePrerelease) {
+      if (version.prerelease.length && !this.options.includePrerelease &&
+          !hasAllowedTag(version, this.options)) {
         // Find the set of versions that are allowed to have prereleases
         // For example, ^1.2.3-pr.1 desugars to >=1.2.3-pr.1 <2.0.0
         // That should allow `1.2.3-pr.2` to pass.
@@ -468,4 +470,5 @@ class Range {
 module.exports = Range
 
 const Comparator = require('./comparator')
+const hasAllowedTag = require('../internal/prerelease-tags')
 const SemVer = require('./semver')

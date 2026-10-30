@@ -3,6 +3,7 @@
 const SemVer = require('../classes/semver')
 const Range = require('../classes/range')
 const Comparator = require('../classes/comparator')
+const hasAllowedTag = require('../internal/prerelease-tags')
 
 const maxSatisfying = (versions, range, options) => {
   let max = null
@@ -34,7 +35,8 @@ const maxSatisfying = (versions, range, options) => {
             break
           }
         }
-        if (pass && sv.prerelease.length && !rangeObj.options.includePrerelease) {
+        if (pass && sv.prerelease.length && !rangeObj.options.includePrerelease &&
+          !hasAllowedTag(sv, rangeObj.options)) {
           // only allow a prerelease if some comparator in this set has one on the same tuple
           pass = false
           for (let j = 0; j < set.length; j++) {
