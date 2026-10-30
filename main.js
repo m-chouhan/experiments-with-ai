@@ -18,12 +18,14 @@ const COMMANDS = {
   park: { args: ['plate', 'type'], run: (cli, plate, type) => cli.park(plate, type) },
   leave: { args: ['plate', 'hours'], run: (cli, plate, hours) => cli.leave(plate, hours) },
   quote: { args: ['plate', 'hours'], run: (cli, plate, hours) => cli.quote(plate, hours) },
+  pass: { args: ['plate'], run: (cli, plate) => cli.pass(plate) },
 };
 
 class ParkingLot {
   constructor(spots) {
     this.spots = spots;
     this.tickets = new Map();
+    this.passes = new Set();
   }
 
   park(plate, type) {
@@ -58,13 +60,25 @@ class ParkingLot {
   leave(plate) {
     this.tickets.delete(plate);
   }
+
+  registerPass(plate) {
+    this.passes.add(plate);
+  }
+
+  hasPass(plate) {
+    return this.passes.has(plate);
+  }
 }
 
 class Pricing {
-  fee(ticket, hours) {
-    let total = VEHICLES[ticket.type].rate * hours;
+  fee(ticket, hours, hasPass) {
+    const capped = Math.min(hours, 8);
+    let total = VEHICLES[ticket.type].rate * capped;
     if (ticket.charging && ticket.type === 'ev') {
-      total += VEHICLES.ev.chargeRate * hours;
+      total += VEHICLES.ev.chargeRate * capped;
+    }
+    if (hasPass) {
+      total = total / 2;
     }
     return total;
   }
@@ -107,7 +121,13 @@ class Cli {
     if (!Number.isInteger(hours) || hours < 1) return { error: 'INVALID' };
     const ticket = this.lot.find(plate);
     if (!ticket) return { error: `NOT FOUND ${plate}` };
-    return { ticket, fee: this.pricing.fee(ticket, hours) };
+    const hasPass = this.lot.hasPass(plate);
+    return { ticket, fee: this.pricing.fee(ticket, hours, hasPass) };
+  }
+
+  pass(plate) {
+    this.lot.registerPass(plate);
+    return `PASS ${plate}`;
   }
 }
 
