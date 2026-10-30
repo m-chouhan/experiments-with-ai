@@ -10,7 +10,8 @@ class Range {
     if (range instanceof Range) {
       if (
         range.loose === !!options.loose &&
-        range.includePrerelease === !!options.includePrerelease
+        range.includePrerelease === !!options.includePrerelease &&
+        samePrereleaseTags(range.options.prereleaseTags, options.prereleaseTags)
       ) {
         return range
       } else {
@@ -540,6 +541,12 @@ const hyphenReplace = incPr => ($0,
   return `${from} ${to}`.trim()
 }
 
+const samePrereleaseTags = (a, b) => {
+  a = a || []
+  b = b || []
+  return a.length === b.length && a.every((t, i) => t === b[i])
+}
+
 const testSet = (set, version, options) => {
   for (let i = 0; i < set.length; i++) {
     if (!set[i].test(version)) {
@@ -548,6 +555,13 @@ const testSet = (set, version, options) => {
   }
 
   if (version.prerelease.length && !options.includePrerelease) {
+    // Prerelease tags opted into by the user match anywhere in the bounds,
+    // which the comparators above have already verified.
+    if (options.prereleaseTags &&
+        options.prereleaseTags.includes(version.prerelease[0])) {
+      return true
+    }
+
     // Find the set of versions that are allowed to have prereleases
     // For example, ^1.2.3-pr.1 desugars to >=1.2.3-pr.1 <2.0.0
     // That should allow `1.2.3-pr.2` to pass.
