@@ -1,11 +1,5 @@
 // Usage: node harness/run.mjs [--pair parking|semver] [--model sonnet|haiku] [--runs 1]
 //                             [--only <version>] [--task <task id>]
-// For each version of the pair: copy it into a fresh git repo (no tests, no prompts), let
-// `claude -p` apply each task, commit, run the hidden tests, then fetch the result into this
-// repo as a branch under exp/<model>/<pair>/. Parking's changes are chained (change 2 builds
-// on change 1); semver's tasks each start from the baseline. Writes results/<timestamp>.json.
-// Claude runs under sandbox-exec: it cannot read this repo or write outside its workdir.
-// Per task, the full transcript and a readable step log go to results/transcripts/.
 import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -31,25 +25,44 @@ const PAIRS = {
     tasks: SEMVER_TASKS.map((id) => ({ id, prompt: `prompts/semver/${id}.md`, tests: [`semver/${id}.test.mjs`] })),
   },
 };
+
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const arg = (name, fallback) => {
+const flag = (name, fallback) => {
   const i = process.argv.indexOf(`--${name}`);
   return i === -1 ? fallback : process.argv[i + 1];
 };
-const modelName = arg('model', 'sonnet');
+const modelName = flag('model', 'sonnet');
+const pairName = flag('pair', 'parking');
 const MODEL = MODELS[modelName];
-const runs = Number(arg('runs', 1));
-const pairName = arg('pair', 'parking');
 const pair = PAIRS[pairName];
-const only = arg('only', null);
-const onlyTask = arg('task', null);
+if (!MODEL) throw new Error(`unknown model: ${modelName}`);
+if (!pair) throw new Error(`unknown pair: ${pairName}`);
+const runs = Number(flag('runs', 1));
+const only = flag('only', null);
+const onlyTask = flag('task', null);
 const versions = pair.versions.filter((v) => !only || v === only);
 const tasks = pair.tasks.filter((t) => !onlyTask || t.id === onlyTask);
 
 const sh = (cmd, args, cwd) => spawnSync(cmd, args, { cwd, encoding: 'utf8' });
 const git = (cwd, ...args) => sh('git', ['-c', 'user.name=lld-harness', '-c', 'user.email=harness@localhost', ...args], cwd);
+const clip = (text, n) => (text.length > n ? `${text.slice(0, n)}…` : text);
+const median = (xs) => [...xs].sort((a, b) => a - b)[Math.floor((xs.length - 1) / 2)];
 
-const runTests = (workdir, files) => {
+const freshRepo = (version) => {
+  const workdir = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), `${pairName}-${version}-`)));
+  fs.cpSync(path.join(root, 'projects', version), workdir, { recursive: true });
+  git(workdir, 'init', '-q', '-b', 'main');
+  git(workdir, 'add', '-A');
+  git(workdir, 'commit', '-q', '-m', `baseline (${version})`);
+  return workdir;
+};
+
+const keep = (workdir, branch) => {
+  git(root, 'fetch', '-q', '--force', workdir, `main:exp/${modelName}/${pairName}/${branch}`);
+  fs.rmSync(workdir, { recursive: true, force: true });
+};
+
+const hiddenTests = (workdir, files) => {
   const res = spawnSync('node', ['--test', ...files.map((f) => path.join(root, 'tests', f))], {
     env: { ...process.env, PROJECT_DIR: workdir }, encoding: 'utf8',
   });
@@ -58,14 +71,14 @@ const runTests = (workdir, files) => {
   return { passed: count('pass'), failed: count('fail'), failing: [...new Set(failing)] };
 };
 
-// The project's own test suite, run against the agent's code but with the original test
-// files, so an agent editing tests cannot hide a regression.
-const runUpstreamTests = (workdir, version) => {
+const upstreamTests = (workdir, version) => {
   const copy = fs.mkdtempSync(path.join(os.tmpdir(), `upstream-${version}-`));
   fs.cpSync(workdir, copy, { recursive: true, filter: (src) => !src.endsWith('/.git') });
   fs.rmSync(path.join(copy, 'test'), { recursive: true, force: true });
   fs.cpSync(path.join(root, 'projects', version, 'test'), path.join(copy, 'test'), { recursive: true });
-  const res = spawnSync('npx', ['tap', '--no-coverage', '-R', 'terse'], { cwd: copy, encoding: 'utf8', timeout: 10 * 60 * 1000 });
+  const res = spawnSync('npx', ['tap', '--no-coverage', '-R', 'terse'], {
+    cwd: copy, encoding: 'utf8', timeout: 10 * 60 * 1000,
+  });
   fs.rmSync(copy, { recursive: true, force: true });
   const out = (res.stdout ?? '').replace(/\x1b\[[0-9;]*[A-Za-z]|\u200b/g, '');
   const n = (re) => Number(re.exec(out.split('Asserts:').at(-1))?.[1] ?? 0);
@@ -74,21 +87,21 @@ const runUpstreamTests = (workdir, version) => {
 
 const sandboxProfile = (workdir) => {
   const home = os.homedir();
+  const writable = [
+    `(subpath "${workdir}")`,
+    `(subpath "${home}/.claude")`,
+    `(regex #"^${home}/\\.claude\\.json")`,
+    `(subpath "/private/var/folders")`,
+    `(subpath "/private/tmp")`,
+    `(subpath "/dev")`,
+  ];
   return `(version 1)
 (allow default)
 (deny file-read* file-write* (subpath "${fs.realpathSync(root)}"))
 (deny file-write*
   (require-all
-    (require-not (subpath "${workdir}"))
-    (require-not (subpath "${home}/.claude"))
-    (require-not (regex #"^${home}/\\.claude\\.json"))
-    (require-not (subpath "/private/var/folders"))
-    (require-not (subpath "/private/tmp"))
-    (require-not (subpath "/dev"))))`;
+    ${writable.map((rule) => `(require-not ${rule})`).join('\n    ')}))`;
 };
-
-const clip = (text, n) => (text.length > n ? `${text.slice(0, n)}…` : text);
-const resultText = (c) => (typeof c === 'string' ? c : (c ?? []).map((x) => x.text ?? '').join(''));
 
 const describeCall = ({ name, input }) => {
   if (name === 'Bash') return `Bash\n\n\`\`\`sh\n${clip(input.command, 1500)}\n\`\`\``;
@@ -97,7 +110,6 @@ const describeCall = ({ name, input }) => {
   return `${name} ${JSON.stringify(input)}`;
 };
 
-// Readable step-by-step log: one step per model turn, with thinking, text, tool calls and results.
 const renderSteps = (events, title) => {
   const lines = [`# ${title}`];
   let lastId = null;
@@ -114,11 +126,12 @@ const renderSteps = (events, title) => {
     }
     if (e.type === 'user' && Array.isArray(e.message.content)) {
       for (const b of e.message.content.filter((x) => x.type === 'tool_result')) {
-        lines.push(`\n**Result${b.is_error ? ' (error)' : ''}:**\n\n\`\`\`\n${clip(resultText(b.content).trim(), 800)}\n\`\`\``);
+        const text = typeof b.content === 'string' ? b.content : (b.content ?? []).map((x) => x.text ?? '').join('');
+        lines.push(`\n**Result${b.is_error ? ' (error)' : ''}:**\n\n\`\`\`\n${clip(text.trim(), 800)}\n\`\`\``);
       }
     }
   }
-  return lines.join('\n') + '\n';
+  return `${lines.join('\n')}\n`;
 };
 
 const askClaude = (workdir, prompt, logBase, title) => {
@@ -165,15 +178,6 @@ const askClaude = (workdir, prompt, logBase, title) => {
   return metrics;
 };
 
-const freshRepo = (version) => {
-  const workdir = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), `${pairName}-${version}-`)));
-  fs.cpSync(path.join(root, 'projects', version), workdir, { recursive: true });
-  git(workdir, 'init', '-q', '-b', 'main');
-  git(workdir, 'add', '-A');
-  git(workdir, 'commit', '-q', '-m', `baseline (${version})`);
-  return workdir;
-};
-
 const results = [];
 const doTask = (workdir, version, task, run) => {
   const prompt = fs.readFileSync(path.join(root, task.prompt), 'utf8');
@@ -184,46 +188,46 @@ const doTask = (workdir, version, task, run) => {
   git(workdir, 'commit', '-q', '--allow-empty', '-m', `${task.id} (${version})`, '-m',
     `model=${MODEL} wall_s=${agent.wall_s} total_tokens=${agent.total_tokens} cost_usd=${agent.cost_usd}`);
   const diff = sh('git', ['diff', '--shortstat', base, 'HEAD'], workdir).stdout.trim();
-  const tests = runTests(workdir, task.tests);
-  const upstream = pair.upstreamTests ? runUpstreamTests(workdir, version) : {};
-  const row = { pair: pairName, model: MODEL, run, version, task: task.id, ...agent, diff, ...tests, ...upstream };
-  results.push(row);
-  const upstreamLine = pair.upstreamTests ? ` Upstream suite: ${upstream.upstream_ok ? 'pass' : 'FAIL'} (${upstream.upstream_passed} passed, ${upstream.upstream_failed} failed).` : '';
+  const tests = hiddenTests(workdir, task.tests);
+  const upstream = pair.upstreamTests ? upstreamTests(workdir, version) : {};
+  results.push({ pair: pairName, model: MODEL, run, version, task: task.id, ...agent, diff, ...tests, ...upstream });
+  const upstreamLine = pair.upstreamTests
+    ? ` Upstream suite: ${upstream.upstream_ok ? 'pass' : 'FAIL'} (${upstream.upstream_passed} passed, ${upstream.upstream_failed} failed).`
+    : '';
   fs.appendFileSync(`${logBase}.md`, `\n## Outcome\n\nHidden tests: ${tests.passed}/${tests.passed + tests.failed} passed.${upstreamLine} ${diff}\n` +
     tests.failing.map((t) => `- failed: ${t}\n`).join(''));
   console.log(`#${run} ${version} ${task.id}: tests ${tests.passed}/${tests.passed + tests.failed}` +
     `${pair.upstreamTests ? `, upstream ${upstream.upstream_ok ? 'ok' : 'FAIL'}` : ''}, ` +
     `${agent.wall_s}s, ${agent.tool_calls} calls, ${agent.total_tokens} tokens, $${agent.cost_usd?.toFixed(3)}, ${diff}`);
 };
-const keep = (workdir, branch) => {
-  git(root, 'fetch', '-q', '--force', workdir, `main:exp/${modelName}/${pairName}/${branch}`);
-  fs.rmSync(workdir, { recursive: true, force: true });
-};
 
-for (let run = 1; run <= runs; run++) for (const version of versions) {
-  if (pair.chained) {
-    const workdir = freshRepo(version);
-    for (const task of tasks) doTask(workdir, version, task, run);
-    keep(workdir, `${version}-${run}`);
-  } else {
-    for (const task of tasks) {
+for (let run = 1; run <= runs; run++) {
+  for (const version of versions) {
+    if (pair.chained) {
       const workdir = freshRepo(version);
-      doTask(workdir, version, task, run);
-      keep(workdir, `${version}-${task.id}-${run}`);
+      for (const task of tasks) doTask(workdir, version, task, run);
+      keep(workdir, `${version}-${run}`);
+    } else {
+      for (const task of tasks) {
+        const workdir = freshRepo(version);
+        doTask(workdir, version, task, run);
+        keep(workdir, `${version}-${task.id}-${run}`);
+      }
     }
   }
 }
 
-const median = (xs) => [...xs].sort((a, b) => a - b)[Math.floor((xs.length - 1) / 2)];
 console.log('\nversion  task                    passed  median s  median tokens  median $');
-for (const version of versions) for (const task of tasks) {
-  const rows = results.filter((r) => r.version === version && r.task === task.id);
-  const ok = rows.filter((r) => r.failed === 0 && r.upstream_ok !== false).length;
-  console.log(`${version.padEnd(8)} ${task.id.padEnd(23)} ${ok}/${rows.length}     ${String(median(rows.map((r) => r.wall_s))).padEnd(9)} ` +
-    `${String(median(rows.map((r) => r.total_tokens))).padEnd(14)} ${median(rows.map((r) => r.cost_usd ?? 0)).toFixed(3)}`);
+for (const version of versions) {
+  for (const task of tasks) {
+    const rows = results.filter((r) => r.version === version && r.task === task.id);
+    const ok = rows.filter((r) => r.failed === 0 && r.upstream_ok !== false).length;
+    console.log(`${version.padEnd(8)} ${task.id.padEnd(23)} ${ok}/${rows.length}     ${String(median(rows.map((r) => r.wall_s))).padEnd(9)} ` +
+      `${String(median(rows.map((r) => r.total_tokens))).padEnd(14)} ${median(rows.map((r) => r.cost_usd ?? 0)).toFixed(3)}`);
+  }
 }
 
 fs.mkdirSync(path.join(root, 'results'), { recursive: true });
 const file = path.join(root, 'results', `${new Date().toISOString().replace(/[:.]/g, '-')}.json`);
-fs.writeFileSync(file, JSON.stringify(results, null, 2) + '\n');
+fs.writeFileSync(file, `${JSON.stringify(results, null, 2)}\n`);
 console.log(`wrote ${path.relative(root, file)}`);
