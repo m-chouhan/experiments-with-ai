@@ -8,13 +8,13 @@ const PREIDLOOSE = '(?:' + NONNUM + '|' + NUMLOOSE + ')'
 const PRE = '(?:-(' + PREID + '(?:\\.' + PREID + ')*))'
 const PRELOOSE = '(?:-?(' + PREIDLOOSE + '(?:\\.' + PREIDLOOSE + ')*))'
 const BUILD = '(?:\\+([a-zA-Z0-9-]{1,250}(?:\\.[a-zA-Z0-9-]{1,250})*))'
-const FULLPLAIN = 'v?(' + NUM + ')\\.(' + NUM + ')\\.(' + NUM + ')' + PRE + '?' + BUILD + '?'
-const LOOSEPLAIN = '[v=\\s]*(' + NUMLOOSE + ')\\.(' + NUMLOOSE + ')\\.(' + NUMLOOSE + ')' + PRELOOSE + '?' + BUILD + '?'
+const FULLPLAIN = '[vV]?(' + NUM + ')\\.(' + NUM + ')\\.(' + NUM + ')' + PRE + '?' + BUILD + '?'
+const LOOSEPLAIN = '[vV=\\s]*(' + NUMLOOSE + ')\\.(' + NUMLOOSE + ')\\.(' + NUMLOOSE + ')' + PRELOOSE + '?' + BUILD + '?'
 
 const XID = NUM + '|x|X|\\*'
 const XIDLOOSE = NUMLOOSE + '|x|X|\\*'
-const XRANGEPLAIN = '[v=\\s]*(' + XID + ')(?:\\.(' + XID + ')(?:\\.(' + XID + ')(?:' + PRE + ')?' + BUILD + '?)?)?'
-const XRANGEPLAINLOOSE = '[v=\\s]*(' + XIDLOOSE + ')(?:\\.(' + XIDLOOSE + ')(?:\\.(' + XIDLOOSE + ')(?:' + PRELOOSE + ')?' + BUILD + '?)?)?'
+const XRANGEPLAIN = '[vV=\\s]*(' + XID + ')(?:\\.(' + XID + ')(?:\\.(' + XID + ')(?:' + PRE + ')?' + BUILD + '?)?)?'
+const XRANGEPLAINLOOSE = '[vV=\\s]*(' + XIDLOOSE + ')(?:\\.(' + XIDLOOSE + ')(?:\\.(' + XIDLOOSE + ')(?:' + PRELOOSE + ')?' + BUILD + '?)?)?'
 
 const HYPHEN_RE = new RegExp('^\\s{0,1}(' + XRANGEPLAIN + ')\\s{1,1}-\\s{1,1}(' + XRANGEPLAIN + ')\\s{0,1}$')
 const HYPHENLOOSE_RE = new RegExp('^\\s{0,1}(' + XRANGEPLAINLOOSE + ')\\s{1,1}-\\s{1,1}(' + XRANGEPLAINLOOSE + ')\\s{0,1}$')
