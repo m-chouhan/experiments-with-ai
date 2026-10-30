@@ -76,6 +76,8 @@ So what was going on?
 >
 > This is also why design can matter so much: **every extra file the agent has to open is paid for again on every turn after it.**
 
+<!-- interactive: readers watch a real run turn by turn: the agent hauls the whole conversation to the model each turn, and one file it read early gets paid for again on every turn after -->
+
 I even tried stripping Claude Code down to a one-line prompt and three tiny tools, to make the code a bigger share of the context. Still no consistent difference. A 90-line toy just can't show it.
 
 **Lesson learned:** the project needs to be big enough that the agent *can't* read everything in one go. It has to navigate.
@@ -101,8 +103,6 @@ Ousterhout says complexity shows up in three ways:
 3. **Unknown unknowns:** it's not obvious *what* you need to change. This is the worst one.
 
 And the cures are **deep modules** (a simple interface hiding a lot of logic) and **information hiding** (each piece of knowledge lives in one place).
-
-Notice what's *not* on the list: "many small classes" or "short files". Ousterhout actually argues *against* lots of tiny classes. That matters for later.
 
 ### The final pick: node-semver
 
@@ -137,9 +137,7 @@ Two rules I didn't break: the **public API stays identical**, and the **behaviou
 | Sonar code smells | 14 | 129 |
 | Duplicated lines | 0.9% | 20.0% |
 
-
-
-One honest caveat: the bad version is **33% bigger**, because copy-pasted code is, well, more code. Some of the cost difference could come from size alone.
+One caveat though: the bad version is **33% bigger**, because copy-pasted code is, well, more code. Some of the cost difference could come from size alone.
 
 ---
 
@@ -148,11 +146,11 @@ One honest caveat: the bad version is **33% bigger**, because copy-pasted code i
 The code isn't really the point here. The **tasks** are. Each is a feature request a semver maintainer could realistically get. The agent gets just the request, in plain language, with no hints about which files to touch:
 
 1. **Uppercase V:** accept `V1.2.3`, not just `v1.2.3`.
-2. **Prerelease tags:** a new option `prereleaseTags: ['rc']`, so `1.3.0-rc.1` counts as matching `^1.2.0`.
-3. **Natural ordering:** a new option so `rc9` sorts before `rc10` (today `rc10` comes first, because it's compared as text).
+2. **Prerelease tags:** add a new option `prereleaseTags: ['rc']`, so `1.3.0-rc.1` counts as matching `^1.2.0`.
+3. **Natural ordering:** add a new option so `rc9` sorts before `rc10` (today `rc10` comes first, because it's compared as text).
 4. **Compatible release:** support Python's `~=` operator in ranges. This one is a **control**: it's about the same amount of work in both versions.
 
-Before running any agent, I solved every task myself on **both** versions, to prove they're solvable and to count how many places each one touches:
+Before running any agent, I solved every task myself(i.e Opus 5.5) on **both** versions, to prove they're solvable and to count how many places each one touches:
 
 | Task | Edit sites in good | Edit sites in bad |
 | --- | --- | --- |
@@ -177,7 +175,7 @@ I wanted to measure a **real agent**, not a lab toy, so:
   - the project's **original test suite**, restored from the untouched copy. The agent can edit or even delete tests in its folder, but it can't hide a regression that way.
 - I record everything: wall time, number of tool calls, tokens (including cache reads), cost, the diff, and the full transcript of every step.
 
-All of it is open source: [github.com/m-chouhan/lld-token-experiment](https://github.com/m-chouhan/lld-token-experiment). 
+All of it is open source: [https://github.com/m-chouhan/experiments-with-ai](https://github.com/m-chouhan/experiments-with-ai). 
 
 ---
 
@@ -255,7 +253,14 @@ No. But the story is more interesting than "clean code = cheaper AI".
 - **Size matters for the experiment.** On a 90-line toy, design made no difference at all, because the agent reads everything in one go. Design starts to matter once the agent has to **navigate**.
 - **"Good design" has to be measurable.** My first bad twin wasn't bad by any metric, and readers would rightly call that out. If you run your own experiment, check your "bad" code with real tools first.
 
-Ousterhout's principles were written for humans who have to keep a mental model of the code. It turns out an AI agent has the same problem, just with a token bill attached. **Knowledge that lives in one place is cheaper to find and safer to change, for humans and for machines.**
+Ousterhout's principles were written for humans who have to keep a mental model of the code. It turns out an AI agent has the same problem, just with a token bill attached. **Knowledge that is structured well is safer to change, for humans and for machines. period.**
+
+---
+
+## All the numbers
+
+<!-- interactive: readers open a panel with every trial's numbers right here, instead of going to GitHub -->
+Every trial I ran, with its tokens, cost, edits and test runs, is in the [repo README](https://github.com/m-chouhan/experiments-with-ai/tree/main/experiments/001-lld-is-not-dead#consolidated-results).
 
 ---
 
