@@ -10,7 +10,8 @@ class Range {
     if (range instanceof Range) {
       if (
         range.loose === !!options.loose &&
-        range.includePrerelease === !!options.includePrerelease
+        range.includePrerelease === !!options.includePrerelease &&
+        samePrereleaseTags(range.options.prereleaseTags, options.prereleaseTags)
       ) {
         return range
       } else {
@@ -236,6 +237,14 @@ const { FLAG_INCLUDE_PRERELEASE, FLAG_LOOSE } = require('../internal/constants')
 
 // unbounded global build-metadata stripper used by parseRange
 const BUILDSTRIPRE = new RegExp(src[t.BUILD], 'g')
+
+const samePrereleaseTags = (a, b) => {
+  if (a === b) {
+    return true
+  }
+  return Array.isArray(a) && Array.isArray(b) &&
+    a.length === b.length && a.every((tag, i) => tag === b[i])
+}
 
 const isNullSet = c => c.value === '<0.0.0-0'
 const isAny = c => c.value === ''
@@ -548,6 +557,13 @@ const testSet = (set, version, options) => {
   }
 
   if (version.prerelease.length && !options.includePrerelease) {
+    // The comparators above already established the version is in bounds.
+    // A prerelease whose first identifier is an opted-in tag needs no more.
+    if (Array.isArray(options.prereleaseTags) &&
+        options.prereleaseTags.includes(String(version.prerelease[0]))) {
+      return true
+    }
+
     // Find the set of versions that are allowed to have prereleases
     // For example, ^1.2.3-pr.1 desugars to >=1.2.3-pr.1 <2.0.0
     // That should allow `1.2.3-pr.2` to pass.

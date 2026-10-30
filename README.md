@@ -217,6 +217,19 @@ object to any
 [functions](https://github.com/npm/node-semver#functions) that do
 range matching.
 
+To allow only certain kinds of prerelease, set the `prereleaseTags`
+option to an array of tags.  A prerelease version whose first
+prerelease identifier is one of these tags matches whenever it is
+within the bounds of the range, even if the range has no prerelease
+on the same `[major, minor, patch]` tuple.  Other prereleases follow
+the rules above.
+
+```javascript
+semver.satisfies('1.3.0-rc.1', '^1.2.0', { prereleaseTags: ['rc'] }) // true
+semver.satisfies('1.3.0-beta.1', '^1.2.0', { prereleaseTags: ['rc'] }) // false
+semver.satisfies('2.0.0-rc.1', '^1.2.0', { prereleaseTags: ['rc'] }) // false, out of bounds
+```
+
 #### Prerelease Identifiers
 
 The method `.inc` takes an additional `identifier` string argument that
@@ -428,6 +441,10 @@ are:
   behavior](https://github.com/npm/node-semver#prerelease-tags) of
   excluding prerelease tagged versions from ranges unless they are
   explicitly opted into.
+- `prereleaseTags`: An array of strings.  When `includePrerelease` is
+  not set, a prerelease version whose first prerelease identifier is
+  one of these tags matches any range whose bounds it is within.  See
+  [prerelease tags](https://github.com/npm/node-semver#prerelease-tags).
 
 Strict-mode Comparators and Ranges will be strict about the SemVer
 strings that they parse.

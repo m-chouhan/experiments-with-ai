@@ -28,3 +28,12 @@ test('invalid ranges never satisfied (but do not throw)', t => {
   cases.forEach(([range, ver]) =>
     t.notOk(satisfies(ver, range), `${range} not satisfied because invalid`))
 })
+
+test('prereleaseTags', t => {
+  const o = { prereleaseTags: ['rc'] }
+  t.ok(satisfies('1.3.0-rc.1', '^1.2.0', o))
+  t.notOk(satisfies('1.3.0-beta.1', '^1.2.0', o))
+  t.notOk(satisfies('2.0.0-rc.1', '^1.2.0', o))
+  t.notOk(satisfies('1.3.0-rc.1', '^1.2.0'))
+  t.end()
+})
