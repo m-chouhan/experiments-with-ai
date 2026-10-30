@@ -18,12 +18,14 @@ const COMMANDS = {
   park: { args: ['plate', 'type'], run: (cli, plate, type) => cli.park(plate, type) },
   leave: { args: ['plate', 'hours'], run: (cli, plate, hours) => cli.leave(plate, hours) },
   quote: { args: ['plate', 'hours'], run: (cli, plate, hours) => cli.quote(plate, hours) },
+  pass: { args: ['plate'], run: (cli, plate) => cli.pass(plate) },
 };
 
 class ParkingLot {
   constructor(spots) {
     this.spots = spots;
     this.tickets = new Map();
+    this.passes = new Set();
   }
 
   park(plate, type) {
@@ -49,10 +51,18 @@ class ParkingLot {
 }
 
 class Pricing {
-  fee(ticket, hours) {
-    let fee = VEHICLES[ticket.type].rate * hours;
+  constructor(passes) {
+    this.passes = passes;
+  }
+
+  fee(plate, ticket, hours) {
+    const cappedHours = Math.min(hours, 8);
+    let fee = VEHICLES[ticket.type].rate * cappedHours;
     if (ticket.type === 'ev' && ticket.spotSize === 'charging') {
-      fee += VEHICLES[ticket.type].chargingFee * hours;
+      fee += VEHICLES[ticket.type].chargingFee * cappedHours;
+    }
+    if (this.passes.has(plate)) {
+      fee = Math.floor(fee / 2);
     }
     return fee;
   }
@@ -95,11 +105,17 @@ class Cli {
     if (!Number.isInteger(hours) || hours < 1) return { error: 'INVALID' };
     const ticket = this.lot.find(plate);
     if (!ticket) return { error: `NOT FOUND ${plate}` };
-    return { ticket, fee: this.pricing.fee(ticket, hours) };
+    return { ticket, fee: this.pricing.fee(plate, ticket, hours) };
+  }
+
+  pass(plate) {
+    this.lot.passes.add(plate);
+    return `PASS ${plate}`;
   }
 }
 
-const cli = new Cli(new ParkingLot(SPOTS), new Pricing());
+const lot = new ParkingLot(SPOTS);
+const cli = new Cli(lot, new Pricing(lot.passes));
 for (const raw of fs.readFileSync(0, 'utf8').split('\n')) {
   const line = raw.trim();
   if (line) console.log(cli.handle(line));
