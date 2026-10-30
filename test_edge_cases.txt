@@ -1,7 +1,0 @@
-park BIKE1 bike
-park TRUCK1 truck
-park CAR1 car
-park EV1 ev
-park EV1 ev
-park INVALID invalid
-park EV2 ev
