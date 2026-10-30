@@ -17,6 +17,7 @@ const semver = require('semver')
 semver.valid('1.2.3') // '1.2.3'
 semver.valid('a.b.c') // null
 semver.clean('  =v1.2.3   ') // '1.2.3'
+semver.clean('  V1.2.3  ') // '1.2.3'
 semver.satisfies('1.2.3', '1.x || >=2.5.0 || 5.0.0 - 7.2.3') // true
 semver.gt('1.2.3', '9.8.7') // false
 semver.lt('1.2.3', '9.8.7') // true
@@ -142,7 +143,7 @@ multiple versions to the utility will just sort them.
 A "version" is described by the `v2.0.0` specification found at
 <https://semver.org/>.
 
-A leading `"="` or `"v"` character is stripped off and ignored.
+A leading `"="`, `"v"` or `"V"` character is stripped off and ignored.
 Support for stripping a leading "v" is kept for compatibility with `v1.0.0` of the SemVer
 specification but should not be used anymore.
 
