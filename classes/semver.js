@@ -1,6 +1,7 @@
 'use strict'
 
 const debug = require('../internal/debug')
+const { compareNaturalIdentifiers } = require('../internal/identifiers')
 
 const NUM = '0|[1-9]\\d{0,256}'
 const NUMLOOSE = '\\d{1,256}'
@@ -57,7 +58,8 @@ class SemVer {
 
     if (version instanceof SemVer) {
       if (version.loose === !!options.loose &&
-        version.includePrerelease === !!options.includePrerelease) {
+        version.includePrerelease === !!options.includePrerelease &&
+        version.naturalPrerelease === !!options.naturalPrerelease) {
         return version
       } else {
         version = version.version
@@ -78,6 +80,8 @@ class SemVer {
     // this isn't actually relevant for versions, but keep it so that we
     // don't run into trouble passing this.options around.
     this.includePrerelease = !!options.includePrerelease
+    // compare runs of digits in alphanumeric prerelease identifiers as numbers
+    this.naturalPrerelease = !!options.naturalPrerelease
 
     const m = version.trim().match(options.loose ? LOOSE_RE : FULL_RE)
 
@@ -215,6 +219,9 @@ class SemVer {
         if (xnum && ynum) {
           x = +x
           y = +y
+        }
+        if (this.naturalPrerelease && !xnum && !ynum) {
+          return compareNaturalIdentifiers(x, y)
         }
         return x === y ? 0
           : (xnum && !ynum) ? -1

@@ -1,6 +1,7 @@
 'use strict'
 
 const SemVer = require('../classes/semver')
+const { compareNaturalIdentifiers } = require('../internal/identifiers')
 
 const compare = (a, b, loose) => {
   const x = new SemVer(a, loose)
@@ -43,7 +44,11 @@ const compare = (a, b, loose) => {
           p = +p
           q = +q
         }
-        c = p === q ? 0 : (pnum && !qnum) ? -1 : (qnum && !pnum) ? 1 : p < q ? -1 : 1
+        if (x.naturalPrerelease && !pnum && !qnum) {
+          c = compareNaturalIdentifiers(p, q)
+        } else {
+          c = p === q ? 0 : (pnum && !qnum) ? -1 : (qnum && !pnum) ? 1 : p < q ? -1 : 1
+        }
         break
       }
     }
