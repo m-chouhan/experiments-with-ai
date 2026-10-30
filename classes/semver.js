@@ -10,8 +10,8 @@ const PREIDLOOSE = '(?:' + NONNUM + '|' + NUMLOOSE + ')'
 const PRE = '(?:-(' + PREID + '(?:\\.' + PREID + ')*))'
 const PRELOOSE = '(?:-?(' + PREIDLOOSE + '(?:\\.' + PREIDLOOSE + ')*))'
 const BUILD = '(?:\\+([a-zA-Z0-9-]{1,250}(?:\\.[a-zA-Z0-9-]{1,250})*))'
-const FULLPLAIN = 'v?(' + NUM + ')\\.(' + NUM + ')\\.(' + NUM + ')' + PRE + '?' + BUILD + '?'
-const LOOSEPLAIN = '[v=\\s]*(' + NUMLOOSE + ')\\.(' + NUMLOOSE + ')\\.(' + NUMLOOSE + ')' + PRELOOSE + '?' + BUILD + '?'
+const FULLPLAIN = '[vV]?(' + NUM + ')\\.(' + NUM + ')\\.(' + NUM + ')' + PRE + '?' + BUILD + '?'
+const LOOSEPLAIN = '[vV=\\s]*(' + NUMLOOSE + ')\\.(' + NUMLOOSE + ')\\.(' + NUMLOOSE + ')' + PRELOOSE + '?' + BUILD + '?'
 
 const FULL_RE = new RegExp('^' + FULLPLAIN + '$')
 const LOOSE_RE = new RegExp('^' + LOOSEPLAIN + '$')
