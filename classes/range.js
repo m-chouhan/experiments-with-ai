@@ -10,7 +10,8 @@ class Range {
     if (range instanceof Range) {
       if (
         range.loose === !!options.loose &&
-        range.includePrerelease === !!options.includePrerelease
+        range.includePrerelease === !!options.includePrerelease &&
+        !!(range.options || {}).naturalPrerelease === !!options.naturalPrerelease
       ) {
         return range
       } else {
@@ -105,7 +106,8 @@ class Range {
     // this is a very hot path, and fully deterministic.
     const memoOpts =
       (this.options.includePrerelease && FLAG_INCLUDE_PRERELEASE) |
-      (this.options.loose && FLAG_LOOSE)
+      (this.options.loose && FLAG_LOOSE) |
+      (this.options.naturalPrerelease && FLAG_NATURAL_PRERELEASE)
     const memoKey = memoOpts + ':' + range
     const cached = cache.get(memoKey)
     if (cached) {
@@ -232,7 +234,11 @@ const {
   tildeTrimReplace,
   caretTrimReplace,
 } = require('../internal/re')
-const { FLAG_INCLUDE_PRERELEASE, FLAG_LOOSE } = require('../internal/constants')
+const {
+  FLAG_INCLUDE_PRERELEASE,
+  FLAG_LOOSE,
+  FLAG_NATURAL_PRERELEASE,
+} = require('../internal/constants')
 
 // unbounded global build-metadata stripper used by parseRange
 const BUILDSTRIPRE = new RegExp(src[t.BUILD], 'g')
