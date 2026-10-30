@@ -34,6 +34,11 @@ const BUILDSTRIP_RE = /(?:\+([a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*))/g
 
 // parsed ranges, oldest first, at most 1000
 const rangeCache = new Map()
+const sameTags = (a, b) => {
+  a = a || []
+  b = b || []
+  return a.length === b.length && a.every((t, i) => t === b[i])
+}
 
 // hoisted class for cyclic dependency
 class Range {
@@ -47,7 +52,8 @@ class Range {
     if (range instanceof Range) {
       if (
         range.loose === !!options.loose &&
-        range.includePrerelease === !!options.includePrerelease
+        range.includePrerelease === !!options.includePrerelease &&
+        sameTags(range.options.prereleaseTags, options.prereleaseTags)
       ) {
         return range
       } else {
@@ -438,25 +444,13 @@ class Range {
         continue
       }
       if (version.prerelease.length && !this.options.includePrerelease) {
-        // Find the set of versions that are allowed to have prereleases
-        // For example, ^1.2.3-pr.1 desugars to >=1.2.3-pr.1 <2.0.0
-        // That should allow `1.2.3-pr.2` to pass.
-        // However, `1.2.4-alpha.notready` should NOT be allowed,
-        // even though it's within the range set by the comparators.
-        for (let j = 0; j < set.length; j++) {
-          if (set[j].semver === Comparator.ANY) {
-            continue
-          }
-          if (set[j].semver.prerelease.length > 0) {
-            const allowed = set[j].semver
-            if (allowed.major === version.major &&
-                allowed.minor === version.minor &&
-                allowed.patch === version.patch) {
-              return true
-            }
-          }
+        // Prereleases are allowed if their first identifier is in
+        // prereleaseTags, or if a comparator in the set has a prerelease on
+        // the same major.minor.patch (e.g. ^1.2.3-pr.1 allows `1.2.3-pr.2`
+        // but `1.2.4-alpha.notready` is NOT allowed).
+        if (prereleaseAllowed(version, set, this.options)) {
+          return true
         }
-        // Version has a -pre, but it's not one of the ones we like.
         continue
       }
       return true
@@ -468,4 +462,5 @@ class Range {
 module.exports = Range
 
 const Comparator = require('./comparator')
+const prereleaseAllowed = require('../internal/prerelease-allowed')
 const SemVer = require('./semver')

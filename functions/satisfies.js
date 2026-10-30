@@ -1,7 +1,7 @@
 'use strict'
 
 const Range = require('../classes/range')
-const Comparator = require('../classes/comparator')
+const prereleaseAllowed = require('../internal/prerelease-allowed')
 const SemVer = require('../classes/semver')
 
 const satisfies = (version, range, options) => {
@@ -31,17 +31,7 @@ const satisfies = (version, range, options) => {
         }
       }
       if (pass && sv.prerelease.length && !range.options.includePrerelease) {
-        // only allow a prerelease if some comparator in this set has one on the same tuple
-        pass = false
-        for (let j = 0; j < set.length; j++) {
-          if (set[j].semver !== Comparator.ANY && set[j].semver.prerelease.length > 0 &&
-            set[j].semver.major === sv.major &&
-            set[j].semver.minor === sv.minor &&
-            set[j].semver.patch === sv.patch) {
-            pass = true
-            break
-          }
-        }
+        pass = prereleaseAllowed(sv, set, range.options)
       }
       ok = pass
     }

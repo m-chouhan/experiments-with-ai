@@ -428,6 +428,16 @@ are:
   behavior](https://github.com/npm/node-semver#prerelease-tags) of
   excluding prerelease tagged versions from ranges unless they are
   explicitly opted into.
+- `prereleaseTags`: An array of strings.  When `includePrerelease` is
+  not set, a prerelease version whose first prerelease identifier is
+  one of these tags matches a range whenever it is within the range's
+  bounds, even if no comparator in the range has a prerelease on the
+  same `major.minor.patch`.  For example,
+  `satisfies('1.3.0-rc.1', '^1.2.0', { prereleaseTags: ['rc'] })` is
+  `true`, but `1.3.0-beta.1` is still `false`, and so is
+  `2.0.0-rc.1` (outside the bounds).  Applies to `satisfies`,
+  `maxSatisfying`, `minSatisfying`, `Range#test`, and everything else
+  that checks versions against ranges.
 
 Strict-mode Comparators and Ranges will be strict about the SemVer
 strings that they parse.
