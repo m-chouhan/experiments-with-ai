@@ -428,6 +428,15 @@ are:
   behavior](https://github.com/npm/node-semver#prerelease-tags) of
   excluding prerelease tagged versions from ranges unless they are
   explicitly opted into.
+- `naturalPrerelease`: Compare runs of digits inside alphanumeric
+  prerelease identifiers as numbers, so `1.0.0-rc9 < 1.0.0-rc10` and
+  `1.0.0-alpha2 < 1.0.0-alpha11`.  (By default they compare as plain
+  strings, so `rc10 < rc9`.)  Purely numeric identifiers still sort
+  before alphanumeric ones, and build metadata is unaffected.  This
+  applies to `compare`, `rcompare`, `compareBuild`, `gt`, `gte`, `lt`,
+  `lte`, `eq`, `neq`, `sort`, `rsort`, `maxSatisfying`,
+  `minSatisfying`, range checks such as `satisfies`, and the
+  `SemVer`, `Comparator`, and `Range` classes.
 
 Strict-mode Comparators and Ranges will be strict about the SemVer
 strings that they parse.

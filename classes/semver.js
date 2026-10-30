@@ -5,7 +5,7 @@ const { MAX_LENGTH, MAX_SAFE_INTEGER } = require('../internal/constants')
 const { safeRe: re, t } = require('../internal/re')
 
 const parseOptions = require('../internal/parse-options')
-const { compareIdentifiers } = require('../internal/identifiers')
+const { compareIdentifiers, compareNaturalIdentifiers } = require('../internal/identifiers')
 
 const isPrereleaseIdentifier = (prerelease, identifier) => {
   const identifiers = identifier.split('.')
@@ -28,7 +28,8 @@ class SemVer {
 
     if (version instanceof SemVer) {
       if (version.loose === !!options.loose &&
-        version.includePrerelease === !!options.includePrerelease) {
+        version.includePrerelease === !!options.includePrerelease &&
+        !!version.options.naturalPrerelease === !!options.naturalPrerelease) {
         return version
       } else {
         version = version.version
@@ -162,6 +163,10 @@ class SemVer {
       return 0
     }
 
+    const compareId = this.options.naturalPrerelease
+      ? compareNaturalIdentifiers
+      : compareIdentifiers
+
     let i = 0
     do {
       const a = this.prerelease[i]
@@ -176,7 +181,7 @@ class SemVer {
       } else if (a === b) {
         continue
       } else {
-        return compareIdentifiers(a, b)
+        return compareId(a, b)
       }
     } while (++i)
   }
