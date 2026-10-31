@@ -28,7 +28,7 @@ I wasn't the first to ask. One interesting study came out recently.
 
 ### SonarSource: "cleaner code, fewer tokens"
 
-The more careful one is a paper from SonarSource ([arXiv 2605.20049](https://arxiv.org/abs/2605.20049)). They took **6 pairs of repositories**, each pair being a messy and a cleaned-up version of the same project, between 26k and 137k lines. Then they gave **Claude Code (Sonnet 4.6)** the same **33 tasks**, **10 runs each**, on both versions of every pair.
+A team at SonarSource ([arXiv 2605.20049](https://arxiv.org/abs/2605.20049)) took **6 pairs of repositories**, each pair being a messy and a cleaned-up version of the same project, between 26k and 137k lines. Then they gave **Claude Code (Sonnet 4.6)** the same **33 tasks**, **10 runs each**, on both versions of every pair.
 
 What they found:
 
@@ -44,6 +44,8 @@ So on clean code the agent didn't succeed more often, but it **wandered around a
 
 Two caveats: they also tried Haiku but dropped it because it failed too many tasks, and their data isn't public, so we can't check it.
 
+I tried to replicate this experiment on my local machine, rest of the writeup covers that aspect.
+
 ---
 
 ## Attempt 1: a parking lot (and why it failed)
@@ -52,12 +54,12 @@ My first idea was the classic LLD interview question: a **parking lot**. Park, l
 
 I wrote it twice, with the same behaviour and about the same length (~90 lines):
 
-- **Junior:** one file, if/else per vehicle type, fee logic copy-pasted into `leave` and `quote`.
-- **Mature:** vehicles and spots as data tables, three small classes (`ParkingLot`, `Pricing`, `Cli`).
+- **Bad Version:** one file, if/else per vehicle type, fee logic copy-pasted into `leave` and `quote`.
+- **Mature / Good Version:** vehicles and spots as data tables, three small classes (`ParkingLot`, `Pricing`, `Cli`).
 
 Then I gave Claude Code (Haiku 4.5) two change requests on each: add **electric vehicles** with charging spots, then add **monthly passes** with a fee cap. The agent never saw the tests. They were hidden outside its sandbox, and graded the result afterwards.
 
-The first round looked great for design. Mature used **~30% fewer tokens** on the first change. Champagne! 🍾
+The first round looked great for design. Good Version used **~30% fewer tokens** on the first change. Champagne! 🍾
 
 Then it all fell apart:
 
@@ -175,7 +177,7 @@ I wanted to measure a **real agent**, not a lab toy, so:
   - the project's **original test suite**, restored from the untouched copy. The agent can edit or even delete tests in its folder, but it can't hide a regression that way.
 - I record everything: wall time, number of tool calls, tokens (including cache reads), cost, the diff, and the full transcript of every step.
 
-All of it is open source: [https://github.com/m-chouhan/experiments-with-ai](https://github.com/m-chouhan/experiments-with-ai). 
+All of it is open source: [https://github.com/m-chouhan/experiments-with-ai](https://github.com/m-chouhan/experiments-with-ai).
 
 ---
 
@@ -277,4 +279,4 @@ If you have ideas for better tasks, a better "bad" twin, or another project to t
 
 ---
 
-*Code, prompts, hidden tests and every transcript:* [github.com/m-chouhan/lld-token-experiment](https://github.com/m-chouhan/lld-token-experiment) 
+*Code, prompts, hidden tests and every transcript:* [github.com/m-chouhan/experiments-with-ai](https://github.com/m-chouhan/experiments-with-ai)
