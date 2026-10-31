@@ -14,11 +14,11 @@ It sounds reasonable. But think about it for a sec: what does an agent actually 
 
 It doesn't read the whole codebase in one go. It searches, opens a file, reads a bit, opens another file, makes an edit, runs the tests, reads the error, edits again... And **every one of those steps costs tokens**, which is literally money.
 
-So the real question isn't "can an AI read bad code?". Of course it can. The righ question would be:
+So the real question isn't "can an AI read bad code?". Of course it can. The better question would be:
 
 **Does bad design make an AI agent spend more, or make more mistakes, when it changes existing code?**
 
-**Does bad design make an Agent thrash ?**
+**Does bad design make an agent thrash?**
 
 ---
 
@@ -151,7 +151,7 @@ The code isn't really the point here. The **tasks** are. Each is a feature reque
 3. **Natural ordering:** add a new option so `rc9` sorts before `rc10` (today `rc10` comes first, because it's compared as text).
 4. **Compatible release:** support Python's `~=` operator in ranges. This one is a **control**: it's about the same amount of work in both versions.
 
-Before running any agent, I solved every task myself(i.e Opus 5.5) on **both** versions, to prove they're solvable and to count how many places each one touches:
+Before running any agent, I solved every task myself (i.e. Opus 5.5) on **both** versions, to prove they're solvable and to count how many places each one touches:
 
 | Task | Edit sites in good | Edit sites in bad |
 | --- | --- | --- |
