@@ -111,8 +111,7 @@ And the cures are **deep modules** (a simple interface hiding a lot of logic) an
 [node-semver](https://github.com/npm/node-semver) is the library npm itself uses to understand versions like `^1.2.3` or `>=2.0.0 <3.0.0`. It's about **1,850 lines** in 48 files, with **22,923 test assertions**. And it's a nice example of information hiding:
 
 - The whole version grammar (what a valid version looks like) is defined **once**, in one module of regular expressions.
-- Comparing two versions lives in **one** place, the `SemVer` class. `gt`, `lt`, `eq` and friends are one-liners on top of it.
-- The rule for "which prerelease versions match a range" lives in **one** function.
+- The rule for "which prerelease versions match a range" lives in **one** function. etc etc.
 
 ### Making the evil twin 😈
 
@@ -126,7 +125,7 @@ Then I wrote the twin the way a rushed team might: everything still works, but k
 | Merged the range parsing (caret, tilde, x-ranges, hyphens) into one long function | Cognitive load |
 | Replaced named constants with magic numbers | Information leakage |
 
-Two rules I didn't break: the **public API stays identical**, and the **behaviour stays identical**. All 22,923 upstream assertions pass on both. On top of that, I wrote a hidden "twin test" that runs every public function on thousands of random versions and ranges and checks both versions give exactly the same answer, or the same error. (I also broke the bad version on purpose to make sure the twin test catches it. It does.)
+Two rules I didn't break: the **public API stays identical**, and the **behaviour stays identical**. All 22,923 upstream assertions pass on both. On top of that, I wrote a hidden "twin test" that runs every public function on thousands of random versions and ranges and checks both versions give exactly the same answer, or the same error.
 
 ### Is bad actually bad? This time, yes
 
@@ -169,7 +168,7 @@ Take a guess: which one do you think the agent will struggle with on the bad ver
 
 I wanted to measure a **real agent**, not a lab toy, so:
 
-- **Claude Code**, out of the box: its own system prompt and its usual tools (read, edit, write, search, shell). No custom tools, no MCP servers, no tricks. The model is **Haiku 4.5**, because it's cheap, and I'm paying for this myself :P
+- **Claude Code**, out of the box: its own system prompt and its usual tools (read, edit, write, search, shell). The model is **Haiku 4.5**, because it's cheap, and I'm paying for this myself :P
 - Each run starts from a **fresh copy** of the project in a temp folder, with its own git repo.
 - The agent runs in a **macOS sandbox**: it can't read anything outside its folder, so it never sees the hidden tests, and it can't write anywhere else.
 - After it's done, I grade it with:
@@ -213,18 +212,15 @@ That's change amplification in action: **every copy is one more chance to get it
 
 Tokens tell you *how much* the agent spent. But I saved the full transcript of every run, so we can also look at *what* it spent it on: every search, every file it read, every edit, every test run. I didn't know this was possible until I tried it, and it turned out to be the most useful view of all.
 
-| Task 2 | good (pilot, 1, 2) | bad (pilot, 1, 2) |
-| --- | --- | --- |
-| Searches | 2, 5, 7 | 6, 6, 5 |
+| Task 2                | good (pilot, 1, 2)  | bad (pilot, 1, 2)    |
+| --------------------- | ------------------- | -------------------- |
+| Searches              | 2, 5, 7             | 6, 6, 5              |
 | Files read (re-reads) | 7 (0), 9 (4), 9 (0) | 8 (5), 10 (0), 7 (1) |
-| **Edits** | **3, 6, 5** | **15, 13, 7** |
-| Scratch test scripts | 0, 0, 0 | 5, 2, 0 |
-| Test runs | 4, 4, 5 | 5, 6, 7 |
-| Edited every file the change needs | 1/1, 1/1, 1/1 | 4/4, 4/4, 4/4 |
+| **Edits**             | **3, 6, 5**         | **15, 13, 7**        |
+| Scratch test scripts  | 0, 0, 0             | 5, 2, 0              |
+| Test runs             | 4, 4, 5             | 5, 6, 7              |
 
 **Edits are the clearest signal.** Searching and reading look about the same on both versions: the agent finds its way around either codebase just fine. But on bad it needed **about 2.5× more edits** (a median of 13 vs 5), which is exactly the four copies showing up in its work. (On the control task, edits were the same on both: 9–13 vs 9–11.)
-
-And look at the last row. **Every bad run edited all four copies**, including the one that failed. The agent didn't *miss* a copy. It found them all, and got three of them wrong. The tests caught only one. So "did it touch the right places?" isn't enough to judge an agent. On duplicated code, finding every copy is the easy part. Changing every copy correctly is where it slips.
 
 <!-- interactive: readers replay a good and a bad run side by side, step by step, and watch which files the agent reads and edits, and which of its edits broke the old rule -->
 
