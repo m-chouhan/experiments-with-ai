@@ -1,0 +1,18 @@
+{
+  "name": "teaching-an-llm-tic-tac-toe",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "play": "node play.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@ai-sdk/google": "4.0.87",
+    "ai": "7.0.127",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^5.9.0"
+  }
+}
