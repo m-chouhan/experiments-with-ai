@@ -27,10 +27,20 @@ const POSITIONS = [
     position('XOXOX.OXO', 'X', 'near-full: 5 is the only legal cell'),
 ];
 
+// Show the board: filled cells as their mark, empty cells as their index, so
+// the model's chosen cell is easy to locate.
+const show = (game: Game): string => {
+    const c = (i: number) => game.board[i] ?? String(i);
+    const r = (a: number, b: number, d: number) => `${c(a)} ${c(b)} ${c(d)}`;
+    return `      ${r(0, 1, 2)}\n      ${r(3, 4, 5)}\n      ${r(6, 7, 8)}`;
+};
+
 const run = async () => {
     let optimal = 0;
     for (const { intent, game } of POSITIONS) {
         console.log(`\n${intent}`);
+        console.log(`  board (${game.turn} to move):`);
+        console.log(show(game));
         try {
             const { output } = await askModel(MODEL, game);
             const result = grade(game, output.cell);
