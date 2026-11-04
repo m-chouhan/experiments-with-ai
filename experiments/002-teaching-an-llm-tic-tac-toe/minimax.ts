@@ -14,8 +14,10 @@ const value = (game: Game, mark: Mark): number => {
 };
 
 // The best value the side to move can force from here.
-const bestValue = (game: Game): number =>
-    Math.max(...legalMoves(game).map((cell) => value(play(game, cell), game.turn)));
+const bestValue = (game: Game): number => {
+    const gameOutcomes = legalMoves(game).map((cell) => value(play(game, cell), game.turn));
+    return Math.max(...gameOutcomes);
+}
 
 // Every move that achieves that best value — any of these counts as optimal.
 export const bestMoves = (game: Game): number[] =>
