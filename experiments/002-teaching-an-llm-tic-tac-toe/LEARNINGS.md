@@ -193,9 +193,12 @@ perfect play. That gives ground truth — no second LLM, no hand-labelling.
 - `grade(game, cell)` → **illegal** (not a playable cell), **optimal** (achieves
   the best value), or **suboptimal** (legal but gives up value).
 
-**Dead-simple scope (on purpose).** First cut: one model, one prompt, one pass
-over four positions, printed to the console. No matrix of models × prompts ×
-trials, no JSONL yet. Enough to see the idea work; the knobs come later.
+**Scope — start dead-simple, then add one knob at a time.** First cut was one
+model, one prompt, one pass over four positions, printed to the console. Then,
+deliberately and in order: a **random-legal baseline** (§7), **K trials** per
+position (the model is stochastic, so report a *rate*), and a **12-position
+suite sliced by type**. Still no model × prompt matrix, no JSONL — those are the
+next knobs.
 
 **Gotcha that taught the method — vet positions offline first.** My first four
 positions were duds. One was already *lost* for X (O had a hidden fork), so
@@ -203,41 +206,95 @@ every move scored `-1` and the oracle called them all "optimal" → a meaningles
 `4/4`. The oracle was right; the *positions* were bad. The fix is a rule now
 baked into the workflow: **a good eval position has an optimal set that is a
 strict subset of the legal moves** (otherwise there's nothing to distinguish).
-We verify that with the free, offline oracle *before* spending any API calls.
+We verify that with the free, offline oracle *before* spending any API calls —
+and generate candidates programmatically (random playouts, kept only if
+discriminating) rather than hand-picking and hoping.
 
-**The outcome — `3/4 optimal`, and the one miss is the interesting part:**
+**Qualitative findings — the failures, not the score, are the point:**
 
-- On a *must-block* position the model played a legal but **losing** move,
+- On a must-block position the model played a legal but **losing** move,
   justified by a **hallucinated** win ("complete the winning diagonal for X" —
-  there was no such diagonal), ignoring the opponent's actual threat. This is §1
+  there was no such diagonal), ignoring the opponent's actual threat. §1
   sharpened: a well-formed, legal move can still be tactically lost, and the
-  model's stated reason can be confident fiction.
+  stated reason can be confident fiction.
 - **Reasons are unreliable even when the move is right:** on a winning position
   the model played the correct cell but described it as "block… and win next"
-  when it had won outright. Don't trust the rationale as an explanation of the
-  move.
-- **Building the eval surfaced a real fragility:** `gemini-flash-latest` times
-  out on *every* structured-output call (15s + retry), so the eval only runs
-  pinned to `gemini-3.5-flash-lite`. The game had been hiding this behind its
-  model fallback chain (§3) — the eval made it visible.
-
-**Takeaway:** an eval needs (a) fixed inputs, (b) a trustworthy grader, and (c)
-inputs that actually discriminate. With a cheap exact oracle you get all three
-almost for free — and the *failures* it surfaces (a hallucinated win, a flaky
-model) are the point, not the headline score.
+  when it had won outright. Don't read the rationale as an explanation.
+- **Failures are deterministic misconceptions, not noise.** Six of twelve
+  positions came back 0/3 with the *same* wrong move all three trials. Sampling
+  K times confirmed the model isn't unlucky — it has a stable, wrong idea.
+- **The eval exposed a hidden fragility:** `gemini-flash-latest` times out on
+  essentially every structured-output call (15s + retry); the eval only runs
+  pinned to `gemini-3.5-flash-lite`. The game had been masking this behind its
+  model fallback chain (§3).
 
 ---
 
-## Parked for next: scaling the eval + observability
+## 7. Grading the score: a number means nothing without a baseline
 
-The dead-simple eval is the seed. Natural next steps:
+A raw score (our first run read `3/4 optimal`) is almost meaningless on its own:
+the sample is tiny, the model is stochastic, and — most importantly — there's
+nothing to compare against. The fix is a **baseline**: the simplest policy that
+isn't the model.
 
-- **Widen the matrix:** several models × a couple of prompt variants × K trials
-  per position (LLMs are stochastic, so repeat and report *rates*), with a
-  bigger, labelled position suite.
-- **Record per-call data to JSONL** for later analysis — which is also where the
+**Random-legal, computed exactly.** A player that picks uniformly among legal
+moves is optimal with probability `|optimal cells| / |legal cells|` — so we get
+the baseline's rate *exactly, with no sampling*, straight from the oracle. It's
+the floor the model has to clear to show it's doing more than guessing.
+
+**The n=12 result (3 trials each, averaged over positions):**
+
+```
+                   model   random
+overall             50%     28%
+win-available       67%     34%     <- takes an in-hand win ~2/3 of the time
+no-immediate-win    33%     22%     <- needs lookahead -> barely above random
+```
+
+Two things only the baseline + the slice reveal:
+
+- **"50%" is unimpressive, not decent** — random already scores 28%, and the gap
+  shrinks to almost nothing on positions that require looking ahead. The model
+  *reacts* (grabs a visible win) far better than it *plans*.
+- **Aggregate hides everything; slice by category.** The honest read isn't "50%"
+  — it's "67% when a win is on the board, 33% when it has to think." Slicing is
+  where the finding lives.
+
+**Caveat we'd state in any write-up:** n=12 is small, so the overall `50 vs 28`
+isn't statistically tight. The robust signal is the *per-type pattern*, which
+held across every run (n=4, and two n=12 runs).
+
+**How the industry grades such systems (evolving, but conventions exist):**
+compare against baselines and *track the trend across versions* rather than
+chasing an absolute pass mark; report rates with repeats, not single tallies;
+**slice by category**; use held-out sets guarded against contamination; and do
+**error analysis** — the failures matter more than the mean. Common metrics by
+task shape: accuracy / exact-match, `pass@k` (code), precision/recall/F1,
+win-rate + Elo (pairwise), and LLM-as-judge calibrated against humans.
+
+---
+
+## 8. Two engineering learnings from scaling the eval
+
+- **Rate limits are part of eval design.** 60 unpaced calls blew straight
+  through Gemini's free tier (15 requests/minute) and failed half the trials on
+  quota errors. Fix: **pace the calls** (a fixed delay between requests) to stay
+  under the limit, and don't over-sample — the model is near-deterministic, so 3
+  trials carry the same signal as 5 at half the cost.
+- **The harness needs the same scrutiny as the thing it measures.** A position
+  whose every trial timed out was being scored `0%` and folded into the average
+  — fabricated data pulling the number down. No-data cases must be **excluded**,
+  not counted as zero. Measuring instruments can be buggy too.
+
+---
+
+## Parked for next: wider matrix + observability
+
+- **Widen the matrix:** several models × a couple of prompt variants over the
+  same (bigger) suite, to turn the eval from "how does this model do" into "which
+  model / prompt does best."
+- **Record per-call data to JSONL** for later analysis — also where the
   observability signals live, for free: latency per attempt, which model
   answered (fallback depth), retry / timeout / failure counts, token usage
-  (`generateText` returns `usage`), and the experiment's own signal, the
-  illegal / suboptimal rate. Open question: console vs. JSONL vs. a real tracing
-  tool.
+  (`generateText` returns `usage`), and the illegal / suboptimal rate. Open
+  question: console vs. JSONL vs. a real tracing tool.
