@@ -48,7 +48,7 @@ export interface LlmMove {
     illegal: boolean;
 }
 
-const askModel = async (modelId: string, game: Game) =>
+export const askModel = async (modelId: string, game: Game) =>
     generateText({
         model: google(modelId),
         system: SYSTEM,

@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "play": "node play.ts",
+    "eval": "node eval.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
