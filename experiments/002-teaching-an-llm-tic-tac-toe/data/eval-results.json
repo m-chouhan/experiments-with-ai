@@ -1,0 +1,11 @@
+{
+  "_source": "Recorded eval run, LEARNINGS.md §7. n=12 positions, 3 trials each, averaged. Model pinned to gemini-3.5-flash-lite.",
+  "model": "gemini-3.5-flash-lite",
+  "positions": 12,
+  "trials": 3,
+  "categories": [
+    { "key": "overall", "label": "Overall", "model": 50, "random": 28 },
+    { "key": "win-available", "label": "Win available", "model": 67, "random": 34, "note": "a win is on the board right now" },
+    { "key": "no-immediate-win", "label": "No immediate win", "model": 33, "random": 22, "note": "you have to look one move ahead" }
+  ]
+}
