@@ -19,7 +19,7 @@ const RETRIES_PER_MODEL = 1;
 // and fail over instead of stalling the game.
 const PER_ATTEMPT_MS = 15_000;
 
-const SYSTEM =
+export const SYSTEM =
     'You play tic-tac-toe. Given a board and whose turn it is, pick the strongest legal '
     + 'open cell for that mark. Keep `reason` to one short sentence a player would understand, '
     + 'under twelve words.';
@@ -37,7 +37,7 @@ const asGrid = (b: Board) => `${glyph(b[0])} | ${glyph(b[1])} | ${glyph(b[2])}
 ${glyph(b[3])} | ${glyph(b[4])} | ${glyph(b[5])}
 ${glyph(b[6])} | ${glyph(b[7])} | ${glyph(b[8])}`;
 
-const promptFor = (game: Game) => `Cells are numbered 0-8, left to right, top to bottom.
+export const promptFor = (game: Game) => `Cells are numbered 0-8, left to right, top to bottom.
 You are playing ${game.turn}.
 
 ${asGrid(game.board)}.`;

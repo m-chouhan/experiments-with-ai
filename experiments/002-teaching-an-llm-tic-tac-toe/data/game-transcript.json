@@ -1,0 +1,263 @@
+{
+  "model": "gemini-3.5-flash-lite",
+  "xPlayer": "minimax-optimal",
+  "system": "You play tic-tac-toe. Given a board and whose turn it is, pick the strongest legal open cell for that mark. Keep `reason` to one short sentence a player would understand, under twelve words.",
+  "result": "X (perfect play) wins",
+  "plies": [
+    {
+      "n": 1,
+      "player": "X",
+      "cell": 1,
+      "boardBefore": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "boardAfter": [
+        null,
+        "X",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "bestMoves": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "grade": "optimal"
+    },
+    {
+      "n": 2,
+      "player": "O",
+      "cell": 4,
+      "boardBefore": [
+        null,
+        "X",
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "boardAfter": [
+        null,
+        "X",
+        null,
+        null,
+        "O",
+        null,
+        null,
+        null,
+        null
+      ],
+      "bestMoves": [
+        0,
+        2,
+        4,
+        7
+      ],
+      "grade": "optimal",
+      "prompt": "Cells are numbered 0-8, left to right, top to bottom.\nYou are playing O.\n\n. | X | .\n. | . | .\n. | . | ..",
+      "rawResponse": "{\n  \"cell\": 4,\n  \"reason\": \"Taking the center controls the board.\"\n}",
+      "reason": "Taking the center controls the board.",
+      "latencyMs": 1325,
+      "legal": true
+    },
+    {
+      "n": 3,
+      "player": "X",
+      "cell": 8,
+      "boardBefore": [
+        null,
+        "X",
+        null,
+        null,
+        "O",
+        null,
+        null,
+        null,
+        null
+      ],
+      "boardAfter": [
+        null,
+        "X",
+        null,
+        null,
+        "O",
+        null,
+        null,
+        null,
+        "X"
+      ],
+      "bestMoves": [
+        0,
+        2,
+        3,
+        5,
+        6,
+        8
+      ],
+      "grade": "optimal"
+    },
+    {
+      "n": 4,
+      "player": "O",
+      "cell": 6,
+      "boardBefore": [
+        null,
+        "X",
+        null,
+        null,
+        "O",
+        null,
+        null,
+        null,
+        "X"
+      ],
+      "boardAfter": [
+        null,
+        "X",
+        null,
+        null,
+        "O",
+        null,
+        "O",
+        null,
+        "X"
+      ],
+      "bestMoves": [
+        0,
+        2,
+        3,
+        5
+      ],
+      "grade": "suboptimal",
+      "prompt": "Cells are numbered 0-8, left to right, top to bottom.\nYou are playing O.\n\n. | X | .\n. | O | .\n. | . | X.",
+      "rawResponse": "{\n  \"cell\": 6,\n  \"reason\": \"Taking the corner sets up a winning opportunity.\"\n}",
+      "reason": "Taking the corner sets up a winning opportunity.",
+      "latencyMs": 918,
+      "legal": true
+    },
+    {
+      "n": 5,
+      "player": "X",
+      "cell": 2,
+      "boardBefore": [
+        null,
+        "X",
+        null,
+        null,
+        "O",
+        null,
+        "O",
+        null,
+        "X"
+      ],
+      "boardAfter": [
+        null,
+        "X",
+        "X",
+        null,
+        "O",
+        null,
+        "O",
+        null,
+        "X"
+      ],
+      "bestMoves": [
+        2
+      ],
+      "grade": "optimal"
+    },
+    {
+      "n": 6,
+      "player": "O",
+      "cell": 3,
+      "boardBefore": [
+        null,
+        "X",
+        "X",
+        null,
+        "O",
+        null,
+        "O",
+        null,
+        "X"
+      ],
+      "boardAfter": [
+        null,
+        "X",
+        "X",
+        "O",
+        "O",
+        null,
+        "O",
+        null,
+        "X"
+      ],
+      "bestMoves": [
+        0,
+        3,
+        5,
+        7
+      ],
+      "grade": "optimal",
+      "prompt": "Cells are numbered 0-8, left to right, top to bottom.\nYou are playing O.\n\n. | X | X\n. | O | .\nO | . | X.",
+      "rawResponse": "{\n  \"cell\": 3,\n  \"reason\": \"Block the opponent's winning threat on the left.\"\n}",
+      "reason": "Block the opponent's winning threat on the left.",
+      "latencyMs": 1166,
+      "legal": true
+    },
+    {
+      "n": 7,
+      "player": "X",
+      "cell": 0,
+      "boardBefore": [
+        null,
+        "X",
+        "X",
+        "O",
+        "O",
+        null,
+        "O",
+        null,
+        "X"
+      ],
+      "boardAfter": [
+        "X",
+        "X",
+        "X",
+        "O",
+        "O",
+        null,
+        "O",
+        null,
+        "X"
+      ],
+      "bestMoves": [
+        0,
+        5
+      ],
+      "grade": "optimal"
+    }
+  ]
+}

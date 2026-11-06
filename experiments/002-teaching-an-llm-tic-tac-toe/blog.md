@@ -1,5 +1,7 @@
 # I Made an LLM Play Tic-Tac-Toe. Here is what I learned!
 
+![A confident robot announcing a winning diagonal that doesn't exist](images/title.svg)
+
 *Hello again! After the last experiment I wanted something smaller and more hands-on: wire a real LLM into a tiny app, end to end, and actually watch it play. Tic-tac-toe felt perfect — everyone knows the rules, the whole game fits on a napkin, and a child can play it perfectly. So surely a model trained on half the internet can too, right? Well. This post is about what happened when I checked, and what it taught me about how these models actually "think".*
 
 ---
@@ -214,6 +216,16 @@ The score tells you *how much*. The transcripts tell you *what went wrong* — a
 >
 > A hunch I haven't measured yet. When you and I look at a board, we see a 3×3 *grid* — rows, columns, diagonals, all at once, spatially. The model doesn't. It sees a sequence of tokens: `X . O X O O . X .`. The two-dimensional structure that makes "block the diagonal" *obvious* to us is something it has to reconstruct from a flat string — fighting the input format as much as the game.
 >
+
+---
+
+## Watch it play a full game
+
+Scores and single turns are one thing — here's an entire game, start to finish, exactly as it happened. I'm **X**, playing perfectly; the model is **O**. Every O move is a real API call, shown with the exact prompt I sent, the raw reply, how long it took, and the oracle's grade.
+
+<!-- interactive: an honest replay of one full recorded game — the board fills in move by move while a panel shows each LLM call's prompt, raw response, latency and grade -->
+
+Watch move 4: it grabs a corner and calls it *"a winning opportunity"* — the one suboptimal move of the game. Perfect play turned that into a fork, and three moves later it's over. It reacted to each board in isolation; it never saw the trap forming.
 
 ---
 
