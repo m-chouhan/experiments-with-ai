@@ -14,7 +14,7 @@ const MODEL = 'gemini-3.5-flash-lite';
 const TRIALS = 3;
 
 // Gemini's free tier allows ~15 requests/minute. Space calls out so a full run
-// stays under that instead of failing half its trials on quota errors.
+// stays under that limit.
 const DELAY_MS = 4500;
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
