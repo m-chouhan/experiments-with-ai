@@ -288,6 +288,70 @@ win-rate + Elo (pairwise), and LLM-as-judge calibrated against humans.
 
 ---
 
+## 9. Experiment #2 — give it the legal moves + room to think (it works)
+
+The §6/§7 baseline ran a terse prompt (12-word reason cap, cell-first schema) and
+left the model to parse the board on its own. This follow-up tests the **grid
+hypothesis** parked in the chapter-002 write-up: if the model is fighting the
+flat-string board representation as much as the game, then handing it the
+structure explicitly should move the planning numbers.
+
+**The change (uncommitted `llm.ts`, four tweaks at once):**
+
+- **reason-first schema** — ask for `reason` *before* `cell`, so the model
+  reasons into the field before committing to a move (carried over from
+  experiment #1).
+- **lifted the word cap** — drop the 12-word ceiling on `reason`.
+- **"work it out step by step" prompt** — let it enumerate rather than snap.
+- **explicit `Legal (open) cells: …` line** appended in `promptFor` — the
+  structure it was previously reconstructing from a flat string, handed to it
+  directly.
+
+**Result — a clear win over the documented baseline (n=12, 3 trials each):**
+
+```
+                   baseline   exp #2   random
+overall              50%        69%      28%
+win-available        67%        89%      34%
+no-immediate-win     33%        50%      22%
+```
+
+Both cohorts improved, and the overall now sits well clear of random (69 vs 28)
+instead of barely above it (50 vs 28).
+
+**Reads:**
+
+- **The grid hypothesis held, directionally.** Giving the model the structure it
+  was reconstructing moved the planning number (33% → 50%). It's a bundled change
+  (four tweaks at once), so this doesn't isolate *which* tweak did the work — the
+  next cut should ablate them one at a time.
+- **The "reacts, doesn't plan" thesis is softened, not erased.** Grabbing an
+  in-hand win is now near-perfect (89%); lookahead is still roughly a coin flip
+  (50%). The shape of the weakness is unchanged, just smaller.
+- **A scare that wasn't:** a partial foreground run hinted position #1 dropped to
+  1/3. The full run has it back to a clean 3/3 — the partial run had been cut off
+  (exit 137), not a regression. Lesson: don't read findings off a truncated run.
+
+**Where it still fails (the honest caveats):**
+
+- **win-available** is 5/6 at a perfect 3/3; the lone soft spot is **#5** (1/3):
+  X X on the bottom row with the win at cell 8, but the model played 5 twice
+  instead of taking the win. One genuine missed win remains.
+- **no-immediate-win** still has two stubborn **0/3** positions:
+  - **#11** (optimal `{6,8}`) — played center 4 all three trials.
+  - **#12** (near-empty board, single X at 5, optimal `{2}`) — grabbed center 4
+    all three trials: a corner/opening-strategy miss.
+
+**Caveat (same as §7):** n=12, so the overall `69 vs 28` isn't statistically
+tight. The robust read is the per-cohort direction — both slices up, planning
+still the weak half.
+
+**Status:** the `llm.ts` change is parked on a separate branch
+(`exp-002-legal-moves`); `main` keeps the baseline prompt. This is raw material
+for the next chapter, not a change to ship into the baseline experiment.
+
+---
+
 ## Parked for next: wider matrix + observability
 
 - **Widen the matrix:** several models × a couple of prompt variants over the
