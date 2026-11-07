@@ -1,5 +1,7 @@
 # I Made an LLM Play Tic-Tac-Toe. Here is what I learned!
 
+![A confident robot announcing a winning diagonal that doesn't exist](images/title.svg)
+
 *Hello again! After the last experiment I wanted something smaller and more hands-on: wire a real LLM into a tiny app, end to end, and actually watch it play. Tic-tac-toe felt perfect — everyone knows the rules, the whole game fits on a napkin, and a child can play it perfectly. So surely a model trained on half the internet can too, right? Well. This post is about what happened when I checked, and what it taught me about how these models actually "think".*
 
 ---
@@ -51,7 +53,7 @@ const cell = parseInt(answer.match(/\d/)?.[0] ?? "")   // bla bla bla
 
 But this is brittle — the model wraps the number in a sentence, says "top-left" instead of `0`, and the parser falls over.
 
-But the better way is restricting the output of the llm, conforming it into a structure. The more technical term for this is **Constrained Decoding**, and there's substantial evidence ([paper](https://arxiv.org/pdf/2610.35328)) that it can improve model performance.
+But the better way is restricting the output of the model, conforming it into a structure. The more technical term for this is **Constrained Decoding**.
 
 **How to get structured output?**
 
@@ -70,7 +72,7 @@ const moveSchema = z.object({
 
 Why vercel? 
 
-See the Models are becoming more and more commoditized in the current day and age, and Vercel lets us abstract out the model provider from our application logic. You give it the model, a *system* prompt (the standing instructions that frame every call — *"you are O in a game of tic-tac-toe…"*), and the user prompt.
+See, models are becoming more and more commoditized in the current day and age, and Vercel lets us abstract out the model provider from our application logic. You give it the model, a *system* prompt (the standing instructions that frame every call — *"you are O in a game of tic-tac-toe…"*), and the user prompt. And it takes care of the rest.
 
 **3. The piece that binds the two together.** `Output.object({ schema })` hands the zod schema to the model as the required output format, then parses and validates the reply behind the scenes.
 
@@ -85,15 +87,17 @@ const { output } = await generateText({
 
 And that's it — our function is no longer `string -> string`. `output` comes back typed as `{ cell: number; reason: string }`, exactly the `Move` we wanted. No regexes, no "parse the third word".
 
-(I also ask for a one-sentence `reason` — more on why that turned out to be interesting later.)
+> **🐇 Rabbit hole: impact of constraining on model performance?**
+>
+> A 2026 paper that revisits exactly this question (*[Constrained Decoding: Harmful or Beneficial?](https://arxiv.org/abs/2610.35328)*) argues that constraining the LLM's output can improve performance by eliminating invalid paths in the output. So structure isn't only a parsing convenience; done right, it can make the model *more* accurate, not less.
+>
+> I also ask for a one-sentence `reason` — more on why that turned out to be interesting later.
 
 ---
 
 ## Lesson 2: well-formed ≠ legal
 
-Here's the thing that surprised me most, and it's the most *LLM-specific* lesson of the whole project.
-
-The model returns a perfectly-parsed, schema-valid move — a clean number between 0 and 8, with a confident reason attached — **that is still an illegal play**, because it names a cell that's already taken.
+Here's what surprised me most: the model handed back a flawless move — a clean number, 0 to 8, with a confident reason — that was completely illegal. It had picked a square that was already taken.
 
 Think about what that means. Structured output guaranteed the *shape* of the answer. It said nothing about whether the answer was *correct against the rules of the game*. The schema checks the envelope; it never reads the letter inside.
 
@@ -106,7 +110,7 @@ return { cell: output.cell, reason: output.reason, illegal: !isLegal(game, outpu
 In the game, an illegal move just ends things as a forfeit, printed plainly. Because that illegal-move rate is the real signal — it's the model telling you how well it actually "sees" the board.
 
 **Takeaway:** validate an LLM's output against your domain rules even when it parsed cleanly.  
-A valid shape does not imply a  valid move.
+A valid shape does not imply a valid move.
 
 ---
 
@@ -114,7 +118,7 @@ A valid shape does not imply a  valid move.
 
 My first version was one `await` to one model. It broke the first time I played — the model was briefly overloaded ("high demand"), the call errored, and the whole turn died.
 
-So this means we need to build a resilience layer that lives *around* the call, not in it — how? :thinking:
+So this means we need to build a resilience layer that lives *around* the call, not in it — how? 🧩
 
 - **A fallback chain.** Try models in order; on failure, fall through to the next instead of failing the turn.
 - `maxRetries: 1`**.** The SDK retries twice by default and *bills every attempt*, which also makes an overloaded model slow to give up. One retry, then move on.
@@ -126,7 +130,7 @@ So this means we need to build a resilience layer that lives *around* the call, 
 
 ## Lesson 4: is it actually any good?
 
-The game works. :yay: The model seems to play okayish. Here's a real turn:
+The game works. 🥳 The model seems to play okayish. Here's a real turn:
 
 ```
 O (Gemini) plays 6 — "Block the opponent from winning."
@@ -148,9 +152,9 @@ The trouble is the model is **stochastic** — ask it the same thing twice and y
 
 > **💭 Reverie: the chemistry-class flashback**
 >
-> ![Reverie](assets/reverie.png)
+> ![Mr. Bean in chemistry class](images/reverie.gif)
 >
-> This actually reminded me of my chemistry classes, where I never got the desired result on the first attempt. I'd try hard to measure the chemicals in the dish properly, I'd struggle to heat the solution for just the right amount of time — and even then, when I finally measured it, the reading always seemed off for some reason :/. Anyway, that's why we were always told to repeat the experiment and take the average. That's when it clicked. :ooohhh:
+> This actually reminded me of my chemistry classes, where I never got the desired result on the first attempt. I'd try hard to measure the chemicals in the dish properly, I'd struggle to heat the solution for just the right amount of time — and even then, when I finally measured it, the reading always seemed off for some reason :/. Anyway, that's why we were always told to repeat the experiment and take the average. That's when it clicked. 💡
 
 The best you can do is run the model many times and *measure how often it's right*. That's not a test. It's an **experiment**. 
 
@@ -172,6 +176,7 @@ const randomOptimalRate = (game: Game): number =>
 
 I used twelve board positions, categorized by different game situations, with three trials each, averaged:
 
+<!-- interactive: readers see the model-vs-random rates as bars, split by position type, so the gap between "grabs a visible win" and "has to look ahead" is obvious at a glance -->
 ```
                    model   random
 overall             50%     28%
@@ -186,8 +191,6 @@ Two findings, and you only get them because of the baseline and the split:
 **The aggregate hides the real story.** Split the positions by type and the pattern jumps out. When there's a winning move *sitting right there*, the model grabs it two-thirds of the time. The moment it has to **look one move ahead** — block a threat, set up a fork — it falls to 33%, just a whisker above the random bot. 
 
 Insight: the model **reacts** well. It doesn't **plan**. (this was tested on gemini-3.5-flash-lite, fyi)
-
-*(One Caveat to call out: n=12 is small, so the overall 50-vs-28 isn't statistically tight.)*
 
 > **🐇 Rabbit hole: I got lucky — most evals don't have a referee**
 >
@@ -212,8 +215,16 @@ The score tells you *how much*. The transcripts tell you *what went wrong* — a
 > **🐇 Rabbit hole: is this a *grid* problem? (a hypothesis)**
 >
 > A hunch I haven't measured yet. When you and I look at a board, we see a 3×3 *grid* — rows, columns, diagonals, all at once, spatially. The model doesn't. It sees a sequence of tokens: `X . O X O O . X .`. The two-dimensional structure that makes "block the diagonal" *obvious* to us is something it has to reconstruct from a flat string — fighting the input format as much as the game.
->
-> The follow-up experiment writes itself: give it the board in a different representation, or an explicit list of legal moves, and see if the planning numbers move. I don't know yet. That's the fun part.
+
+---
+
+## Watch it play a full game
+
+Scores and single turns are one thing — here's an entire game, start to finish, exactly as it happened. I'm **X**, playing perfectly; the model is **O**. Every O move is a real API call, shown with the exact prompt I sent, the raw reply, how long it took, and the oracle's grade.
+
+![A full recorded game, start to finish — I play X perfectly, the model plays O, and every O move is a real API call](images/game-replay.gif)
+
+Watch move 4: it grabs a corner and calls it *"a winning opportunity"* — the one suboptimal move of the game. Perfect play turned that into a fork, and three moves later it's over. It reacted to each board in isolation; it never saw the trap forming.
 
 ---
 
@@ -247,7 +258,6 @@ If you have a better prompt, a sharper board representation, or a theory about *
 - **Evan Miller, *Adding Error Bars to Evals* (Anthropic, 2024)** — eval scores are measurements and deserve standard errors and confidence intervals. [arxiv.org/abs/2411.00640](https://arxiv.org/abs/2411.00640)
 - **Hamel Husain, *Your AI Product Needs Evals* (2024)** — the practitioner's starting point, and the source of the line that broke my brain: unlike unit tests, you don't need a 100% pass rate — the pass rate is a product decision. [hamel.dev/blog/posts/evals](https://hamel.dev/blog/posts/evals/)
 - **Shankar et al., *Who Validates the Validators?* (Berkeley, UIST 2024)** — where "criteria drift" comes from. [arxiv.org/abs/2404.12272](https://arxiv.org/abs/2404.12272)
-- **Ribeiro et al., *Beyond Accuracy: Behavioral Testing of NLP Models with CheckList* (ACL 2020, Best Paper)** — the case for borrowing behavioral testing from software engineering and probing a model as a black box. [arxiv.org/abs/2005.04118](https://arxiv.org/abs/2005.04118)
 
 ---
 

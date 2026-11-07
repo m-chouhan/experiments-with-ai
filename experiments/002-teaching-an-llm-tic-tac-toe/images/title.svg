@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 380" role="img" aria-label="A confident robot playing tic-tac-toe, announcing a winning diagonal that doesn't exist">
+  <defs>
+    <style>
+      .ink { fill: #1a1a1a; }
+      .muted { fill: #8a8070; }
+      .f-sans { font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif; }
+    </style>
+  </defs>
+
+  <!-- framed panel: self-contained so it reads on both light and dark pages -->
+  <rect x="3" y="3" width="954" height="374" rx="22" fill="#FFF8F0" stroke="#E8E0D5" stroke-width="2"/>
+
+  <!-- ===== board (left) ===== -->
+  <g stroke="#C3B8A6" stroke-width="7" stroke-linecap="round">
+    <line x1="168" y1="78" x2="168" y2="296"/>
+    <line x1="246" y1="78" x2="246" y2="296"/>
+    <line x1="92"  y1="156" x2="322" y2="156"/>
+    <line x1="92"  y1="234" x2="322" y2="234"/>
+  </g>
+
+  <!-- X marks (you) -->
+  <g stroke="#3d5afe" stroke-width="10" stroke-linecap="round">
+    <line x1="105" y1="93"  x2="153" y2="141"/><line x1="153" y1="93"  x2="105" y2="141"/>
+    <line x1="261" y1="93"  x2="309" y2="141"/><line x1="309" y1="93"  x2="261" y2="141"/>
+    <line x1="105" y1="249" x2="153" y2="297"/><line x1="153" y1="249" x2="105" y2="297"/>
+  </g>
+
+  <!-- O marks (the LLM) -->
+  <g fill="none" stroke="#FF6B5E" stroke-width="10">
+    <circle cx="207" cy="117" r="26"/>
+    <circle cx="129" cy="195" r="26"/>
+    <circle cx="207" cy="195" r="26"/>
+    <circle cx="285" cy="273" r="26"/>
+  </g>
+
+  <!-- the imagined "winning diagonal" the robot hallucinates (there isn't one) -->
+  <line x1="207" y1="117" x2="285" y2="273" stroke="#FF6B5E" stroke-width="4" stroke-dasharray="3 10" stroke-linecap="round" opacity="0.65"/>
+
+  <!-- ===== speech bubble ===== -->
+  <g>
+    <rect x="500" y="26" width="392" height="74" rx="18" fill="#ffffff" stroke="#1a1a1a" stroke-width="2.5"/>
+    <path d="M672 98 L696 128 L712 98 Z" fill="#ffffff" stroke="#1a1a1a" stroke-width="2.5" stroke-linejoin="round"/>
+    <rect x="694" y="95" width="22" height="8" fill="#ffffff"/>
+    <text class="f-sans" x="696" y="58" text-anchor="middle" font-size="21" font-weight="700" fill="#1a1a1a">Completing the winning</text>
+    <text class="f-sans" x="696" y="84" text-anchor="middle" font-size="21" font-weight="700" fill="#FF6B5E">diagonal! <tspan fill="#1a1a1a">😎</tspan></text>
+  </g>
+
+  <!-- ===== robot (right) ===== -->
+  <g>
+    <!-- antenna -->
+    <line x1="696" y1="140" x2="696" y2="120" stroke="#8a8070" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="696" cy="116" r="7" fill="#3d5afe"/>
+    <!-- head -->
+    <rect x="606" y="140" width="180" height="150" rx="26" fill="#EDEFF4" stroke="#CFD4DF" stroke-width="2.5"/>
+    <!-- screen/face plate -->
+    <rect x="628" y="168" width="136" height="96" rx="16" fill="#1a1f2e"/>
+    <!-- eyes (confident) -->
+    <circle cx="668" cy="206" r="15" fill="#7FE0C8"/>
+    <circle cx="724" cy="206" r="15" fill="#7FE0C8"/>
+    <!-- big grin -->
+    <path d="M652 232 Q696 262 740 232" fill="none" stroke="#7FE0C8" stroke-width="7" stroke-linecap="round"/>
+    <!-- ears -->
+    <rect x="596" y="196" width="12" height="40" rx="6" fill="#CFD4DF"/>
+    <rect x="784" y="196" width="12" height="40" rx="6" fill="#CFD4DF"/>
+  </g>
+
+  <!-- caption -->
+  <text class="f-sans muted" x="480" y="350" text-anchor="middle" font-size="16">X = you&#160;&#160;·&#160;&#160;O = a very confident LLM</text>
+</svg>
