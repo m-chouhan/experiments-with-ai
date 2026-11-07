@@ -1,5 +1,5 @@
 {
-  "_source": "Recorded eval run, LEARNINGS.md §7. n=12 positions, 3 trials each, averaged. Model pinned to gemini-3.5-flash-lite.",
+  "_source": "Recorded eval run (see blog.md, Lesson 5). n=12 positions, 3 trials each, averaged. Model pinned to gemini-3.5-flash-lite.",
   "model": "gemini-3.5-flash-lite",
   "positions": 12,
   "trials": 3,

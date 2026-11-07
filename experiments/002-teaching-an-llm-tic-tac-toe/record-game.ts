@@ -11,7 +11,7 @@ import { SYSTEM, promptFor, askModel } from './llm.ts';
 
 try { process.loadEnvFile(); } catch { /* key may already be in env */ }
 
-const MODEL = 'gemini-3.5-flash-lite'; // what the eval pins to (see LEARNINGS §eval)
+const MODEL = 'gemini-3.5-flash-lite'; // the model the eval pins to (see blog.md)
 const pick = <T>(xs: T[]): T => xs[Math.floor(Math.random() * xs.length)];
 
 type Ply = {
