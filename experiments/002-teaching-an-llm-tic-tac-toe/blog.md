@@ -97,7 +97,7 @@ And that's it — our function is no longer `string -> string`. `output` comes b
 
 ## Lesson 2: well-formed ≠ legal
 
-Here's the thing that surprised me most. The model returns a perfectly-parsed, schema-valid move — a clean number between 0 and 8, with a confident reason attached — **that is still an illegal play**, because it names a cell that's already taken.
+Here's what surprised me most: the model handed back a flawless move — a clean number, 0 to 8, with a confident reason — that was completely illegal. It had picked a square that was already taken.
 
 Think about what that means. Structured output guaranteed the *shape* of the answer. It said nothing about whether the answer was *correct against the rules of the game*. The schema checks the envelope; it never reads the letter inside.
 
@@ -215,7 +215,6 @@ The score tells you *how much*. The transcripts tell you *what went wrong* — a
 > **🐇 Rabbit hole: is this a *grid* problem? (a hypothesis)**
 >
 > A hunch I haven't measured yet. When you and I look at a board, we see a 3×3 *grid* — rows, columns, diagonals, all at once, spatially. The model doesn't. It sees a sequence of tokens: `X . O X O O . X .`. The two-dimensional structure that makes "block the diagonal" *obvious* to us is something it has to reconstruct from a flat string — fighting the input format as much as the game.
->
 
 ---
 
@@ -223,7 +222,7 @@ The score tells you *how much*. The transcripts tell you *what went wrong* — a
 
 Scores and single turns are one thing — here's an entire game, start to finish, exactly as it happened. I'm **X**, playing perfectly; the model is **O**. Every O move is a real API call, shown with the exact prompt I sent, the raw reply, how long it took, and the oracle's grade.
 
-<!-- interactive: an honest replay of one full recorded game — the board fills in move by move while a panel shows each LLM call's prompt, raw response, latency and grade -->
+![A full recorded game, start to finish — I play X perfectly, the model plays O, and every O move is a real API call](images/game-replay.gif)
 
 Watch move 4: it grabs a corner and calls it *"a winning opportunity"* — the one suboptimal move of the game. Perfect play turned that into a fork, and three moves later it's over. It reacted to each board in isolation; it never saw the trap forming.
 
