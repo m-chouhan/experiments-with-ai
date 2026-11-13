@@ -1,0 +1,1039 @@
+<title>Even or Odd, Learned</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=STIX+Two+Text:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column like a lecture, broken up by dark "scene" panels where the
+   animations live — a chalkboard video turned into a page. Deliberately dark-only. */
+:root {
+  --bg: #0d0f12;
+  --panel: #14171c;
+  --line: #2a2f37;
+  --fg: #e9e6df;
+  --muted: #9aa0a8;
+  --blue: #58c4dd;
+  --red: #fc6255;
+  --yellow: #f4d345;
+  --serif: 'STIX Two Text', 'Times New Roman', Georgia, serif;
+  --sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg);
+  font: 17px/1.65 var(--sans);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 72px;
+}
+main { max-width: 720px; margin: 0 auto; }
+p { margin: 0 0 16px; max-width: 65ch; }
+ul { max-width: 65ch; }
+a { color: var(--blue); }
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--yellow); outline-offset: 2px; }
+code { font: 0.9em var(--mono); color: var(--yellow); }
+.m { font-family: var(--serif); font-style: italic; font-size: 1.08em; }
+.blue { color: var(--blue); } .red { color: var(--red); } .yellow { color: var(--yellow); } .muted { color: var(--muted); }
+
+.hero { padding-block: 80px 40px; }
+.kicker { font: 500 12px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+h1 { font: 600 clamp(40px, 8vw, 64px)/1.05 var(--serif); margin: 14px 0 20px; text-wrap: balance; }
+h1 em { font-weight: 400; color: var(--blue); }
+.lede { font: 400 21px/1.55 var(--serif); color: var(--fg); }
+.hero .big { font: 400 clamp(64px, 16vw, 120px)/1 var(--serif); color: var(--yellow); margin: 28px 0 8px; letter-spacing: .02em; }
+
+.chapter { padding-block: 52px 20px; border-top: 1px solid var(--line); }
+.chapter .num { font: 500 12px var(--mono); letter-spacing: .14em; color: var(--yellow); text-transform: uppercase; }
+h2 { font: 600 32px/1.15 var(--serif); margin: 8px 0 18px; text-wrap: balance; }
+
+.pause {
+  margin: 24px 0; padding: 4px 0 4px 18px; border-left: 3px solid var(--yellow);
+  font: italic 400 20px/1.5 var(--serif); max-width: 60ch;
+}
+.pause small { display: block; font: 400 13px var(--mono); color: var(--muted); font-style: normal; margin-top: 6px; letter-spacing: .04em; }
+
+.scene { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 20px; margin: 28px 0; }
+.scene-title { font: 500 11px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; }
+.row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.stack { display: grid; gap: 16px; }
+.controls { display: grid; grid-template-columns: auto 1fr auto; gap: 8px 14px; align-items: center; margin-top: 14px; }
+.controls output { font: 500 14px var(--mono); color: var(--yellow); min-width: 5ch; text-align: right; font-variant-numeric: tabular-nums; }
+
+/* "in the code" box: where this chapter lives in the repo */
+.code { border: 1px solid var(--line); border-left: 3px solid var(--blue); border-radius: 4px; margin: 24px 0; background: var(--panel); }
+.code-file { font: 500 11px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); padding: 8px 14px; border-bottom: 1px solid var(--line); }
+.code-file b { color: var(--blue); font-weight: 500; text-transform: none; letter-spacing: 0; font-size: 13px; }
+.code pre { margin: 0; padding: 12px 14px; font: 13px/1.6 var(--mono); overflow-x: auto; color: var(--fg); }
+.code pre .c { color: var(--muted); }
+
+button, select, input[type=number] {
+  font: 500 14px var(--sans); color: var(--fg); background: var(--bg);
+  border: 1px solid var(--line); border-radius: 4px; padding: 8px 14px;
+}
+button { cursor: pointer; }
+button:hover { border-color: var(--muted); }
+button.primary { border-color: var(--blue); color: var(--blue); }
+button[aria-pressed=true] { border-color: var(--yellow); color: var(--yellow); }
+input[type=number] { font: 500 20px var(--mono); width: 7ch; color: var(--yellow); }
+input[type=range] { width: 100%; accent-color: var(--blue); }
+input[type=checkbox] { accent-color: var(--yellow); width: 18px; height: 18px; }
+label { font: 13px var(--mono); color: var(--muted); }
+
+/* the 4 x 10 switch / weight grid */
+.grid { display: grid; grid-template-columns: 44px repeat(10, minmax(0, 1fr)); gap: 3px; font: 11px var(--mono); }
+.grid .h { color: var(--muted); text-align: center; align-self: end; padding-bottom: 2px; }
+.grid .rl { color: var(--muted); align-self: center; }
+.cell {
+  aspect-ratio: 1; border: 1px solid var(--line); border-radius: 3px;
+  display: flex; align-items: center; justify-content: center;
+  font: 500 10px var(--mono); color: var(--fg); overflow: hidden; white-space: nowrap;
+  transition: background-color .25s;
+}
+.cell.lit { background: var(--yellow); color: var(--bg); border-color: var(--yellow); }
+.cell.zero { color: #4a505a; }
+.cell.ring { box-shadow: inset 0 0 0 2px var(--yellow); }
+
+/* the strip of numbers in "why not hand it the number" */
+.strip { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; margin-top: 14px; }
+@media (min-width: 560px) { .strip { grid-template-columns: repeat(10, minmax(0, 1fr)); } }
+.scell { border: 1px solid var(--line); border-radius: 3px; padding: 6px 2px; text-align: center; font: 12px/1.3 var(--mono); }
+.scell b { display: block; font-weight: 500; }
+.scell.right { border-color: var(--yellow); }
+.scell.wrong { opacity: .45; }
+
+.readout { font: 13.5px/1.75 var(--mono); white-space: pre; overflow-x: auto; margin: 0; color: var(--fg); }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; }
+.stat b { display: block; font: 500 22px var(--mono); font-variant-numeric: tabular-nums; }
+.stat span { font: 11px var(--mono); color: var(--muted); letter-spacing: .08em; text-transform: uppercase; }
+
+svg { display: block; width: 100%; height: auto; }
+svg text { fill: var(--muted); font: 11px var(--mono); }
+.axis { stroke: var(--line); }
+.curve { fill: none; stroke: var(--blue); stroke-width: 3; }
+.acc { fill: none; stroke: var(--blue); stroke-width: 2.5; }
+.base { stroke: var(--muted); stroke-dasharray: 4 4; }
+
+table { border-collapse: collapse; width: 100%; font-size: 15px; }
+td, th { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font: 500 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.tablewrap { overflow-x: auto; }
+ol.reading { padding-left: 22px; } ol.reading li { margin-bottom: 12px; max-width: 65ch; }
+footer { border-top: 1px solid var(--line); margin-top: 48px; padding-top: 20px; font: 13px var(--mono); color: var(--muted); }
+
+@media (prefers-reduced-motion: reduce) { .cell { transition: none; } }
+</style>
+
+<main>
+
+<header class="hero">
+  <div class="kicker">experiments-with-ai · 003</div>
+  <h1>Even or odd, <em>learned</em></h1>
+  <div class="big">4817</div>
+  <p class="lede">Is it odd? You knew instantly. You looked at the last digit, saw a 7, done.
+  You could write that rule as one line of code, <code>n % 2</code>.</p>
+  <p class="lede">Now suppose you're not allowed to write that line. All you get is a pile of numbers, each
+  one labelled <span class="blue">odd</span> or <span class="red">even</span>, and one artificial
+  brain cell. Can it find the rule by itself?</p>
+  <p class="lede">It can. To see how, we start with a real brain cell.</p>
+</header>
+
+<!-- 0 -->
+<section class="chapter" id="cell">
+  <div class="num">Chapter 0</div>
+  <h2>A brain cell, in one picture</h2>
+  <p>A neuron in your brain listens to other neurons. Each one sends it a signal, and each
+  connection has a <b>strength</b>. Some connections are strong, some are weak, and some
+  <i>hold the cell back</i> instead of egging it on.</p>
+  <p>The neuron adds up everything coming in. If the total crosses a <b>threshold</b>, it fires.
+  If not, it stays quiet. All or nothing.</p>
+  <p>Here's a made-up one that decides whether you go for a run. Play with it.</p>
+
+  <div class="scene">
+    <div class="scene-title">one neuron: should I go for a run?</div>
+    <svg id="bio" viewBox="0 0 600 240" role="img" aria-label="Three inputs with connection strengths feeding into one neuron that fires or stays quiet"></svg>
+    <div class="controls" id="bio-controls"></div>
+    <div class="readout" id="bio-out" style="margin-top:14px"></div>
+  </div>
+
+  <div class="pause">With “sunny” and “tired” both on, what's the smallest change that gets you out the door?
+    <small>There's more than one answer: a signal, a strength, or the threshold.</small></div>
+
+  <p>In 1943, Warren McCulloch and Walter Pitts wrote exactly this down as maths: signals of 0 or 1,
+  multiply each by its strength, add them up, fire if the total is over the threshold. In 1958, Frank
+  Rosenblatt asked the question this whole page is about:</p>
+  <div class="pause">Who sets the strengths?
+    <small>You just did, by hand. Rosenblatt's “perceptron” set them from examples.</small></div>
+  <p>One last bit of tidying. “Fire if total ≥ threshold” is the same as “fire if total − threshold ≥ 0”.
+  So instead of a threshold we keep one extra number, called the <b>bias</b>, and add it to the total.
+  Then the rule is just: <i>is the total positive?</i></p>
+  <p>From here on, a strength is called a <b>weight</b> &mdash; which is just the everyday word.
+  A weight says how much one fact counts, and which way it votes. Big and positive pulls towards
+  odd, big and negative pulls towards even, and zero means the neuron ignores that fact entirely.
+  You set these by hand a moment ago. From here on, the data sets them.</p>
+
+  <div class="code">
+    <div class="code-file">in the code · <b>neuron.py</b></div>
+<pre>class Neuron:
+    def __init__(self):
+        self.weights = [0.0] * SWITCH_COUNT   <span class="c"># one weight per switch</span>
+        self.bias = 0.0                       <span class="c"># the threshold, flipped</span></pre>
+  </div>
+</section>
+
+<!-- 1 -->
+<section class="chapter" id="oracle">
+  <div class="num">Chapter 1</div>
+  <h2>The question, and the answer key</h2>
+  <p>Our neuron's job: look at a number from 0000 to 9999 and say <span class="blue">odd</span> or
+  <span class="red">even</span>.</p>
+  <p>To learn, it needs examples with the right answers. We get those for free from an <b>oracle</b>:
+  something we already trust. Here, that's one line.</p>
+  <div class="pause">Isn't it cheating to use <code>n % 2</code> to teach a machine <code>n % 2</code>?</div>
+  <p>No. The oracle is the answer key at the back of the textbook. The neuron never sees its code. It
+  only ever sees question, answer, question, answer. In real projects the oracle is usually people who
+  labelled the data (“this photo is a cat”). In 002, it was a perfect tic-tac-toe player.</p>
+
+  <div class="code">
+    <div class="code-file">in the code · <b>oracle.py</b></div>
+<pre>def oracle(number):
+    """1 if the number is odd, 0 if it's even."""
+    return number % 2</pre>
+  </div>
+</section>
+
+<!-- 2 -->
+<section class="chapter" id="see">
+  <div class="num">Chapter 2</div>
+  <h2>What should the neuron see?</h2>
+  <p>The run neuron had three inputs. What should this one's inputs be? The obvious answer: one input,
+  and it's the number.</p>
+  <div class="pause">Try it. Here's a neuron with one input (the number) and one weight, plus a bias.
+    Can you set them so it gets odd and even right?<small>Watch the accuracy. Try to beat 55%.</small></div>
+
+  <div class="scene">
+    <div class="scene-title">one input: the number itself</div>
+    <div class="readout" id="rw-formula"></div>
+    <div class="controls">
+      <label for="rw-w">weight</label><input id="rw-w" type="range" min="-20" max="20" step="0.5" value="0"><output id="rw-w-v"></output>
+      <label for="rw-b">bias</label><input id="rw-b" type="range" min="-20" max="20" step="0.5" value="0"><output id="rw-b-v"></output>
+    </div>
+    <svg id="rw-chart" viewBox="0 0 600 170" role="img" aria-label="The neuron's confidence across all numbers from 0 to 9999" style="margin-top:14px"></svg>
+    <div class="strip" id="rw-strip"></div>
+    <div class="stats" style="margin-top:16px">
+      <div class="stat"><b id="rw-acc" class="blue">–</b><span>right, on all 10,000</span></div>
+    </div>
+  </div>
+
+  <p>You can't. Look at the chart: whatever you do, the curve only ever goes one way. It can say
+  “big numbers are odd” or “small numbers are odd”, but odd and even <i>zig-zag</i>: 4816 even, 4817 odd,
+  4818 even. A line that only goes one way can't zig-zag. The best it can do is a coin flip.</p>
+  <p>Size is the wrong thing to show it. So let's show it something it can attach a weight to. Each
+  of the four digit places gets a row of ten switches, one for each possible digit, and we turn on the
+  one that matches. Four rows of ten: forty switches.</p>
+
+  <div class="scene">
+    <div class="scene-title">40 switches</div>
+    <div class="row" style="margin-bottom:16px">
+      <label for="enc-num">number</label>
+      <input id="enc-num" type="number" min="0" max="9999" value="4817">
+      <span class="muted" id="enc-note" style="font:13px var(--mono)"></span>
+    </div>
+    <div class="grid" id="enc-grid"></div>
+  </div>
+
+  <p>Now “the last digit is 7” is its own switch, with its own weight. And “the last digit is 8” is a
+  <i>different</i> switch, so it can have the opposite opinion. Always exactly one switch per row is
+  on. The name for this is <b>one-hot encoding</b>.</p>
+  <p class="muted">An aside: written in binary, odd/even is just the last bit, and a neuron gets it
+  100% right instantly. How you show the data decides how hard the problem is. GPT faces the same
+  choice with words, and it uses switches too: one per token.</p>
+
+  <div class="code">
+    <div class="code-file">in the code · <b>switches.py</b></div>
+<pre>def switches_for(number):
+    """A number -> its row of 40 switches, as a list of 0s and 1s."""
+    switches = [0] * SWITCH_COUNT
+    for place, digit in enumerate(f'{number:04d}'):
+        switches[switch_for(place, int(digit))] = 1
+    return switches
+
+<span class="c"># switch_for(3, 7) == 37, the switch meaning "digit 4 is 7"
+# switches_for(4817)[37] == 1   and   switches_for(4818)[37] == 0</span></pre>
+  </div>
+</section>
+
+<!-- 3 -->
+<section class="chapter" id="score">
+  <div class="num">Chapter 3</div>
+  <h2>Weights, and a score</h2>
+  <p>Just like the run neuron: every switch gets a weight, plus one bias. That's 41 numbers, and they
+  all start at zero. The neuron multiplies each switch by its weight and adds it all up. An off switch
+  is 0, so it adds nothing. Only the four switches that are on count:</p>
+  <p class="m" style="font-size:19px">score = bias + weight for “digit 1 is 4” + weight for “digit 2 is 8” + weight for “digit 3 is 1” + weight for “digit 4 is 7”</p>
+
+  <div class="pause">Quick check: for 4817, is the score 4 + bias?
+    <small>Try it below before reading on.</small></div>
+
+  <div class="scene">
+    <div class="scene-title">the score, with real weights</div>
+    <div class="row" style="margin-bottom:16px">
+      <label for="sc-num">number</label>
+      <input id="sc-num" type="number" min="0" max="9999" value="4817">
+      <button id="sc-fresh" aria-pressed="true">fresh weights</button>
+      <button id="sc-trained" aria-pressed="false">after training (spoiler)</button>
+    </div>
+    <div class="readout" id="sc-out"></div>
+  </div>
+
+  <p>No: the 4 in <i>“1st digit is 4”</i> is a <i>label</i>. It says which weight to use, not what to
+  add. A fresh neuron's weights are all 0, so its score is 0. The trained weights add up to about +4.5,
+  and nearly all of that comes from one weight: <i>“4th digit is 7”</i>.</p>
+  <p>Which leaves us with a problem. The oracle answers 0 or 1. The score can be +4.54, or −9, or
+  anything. How do we compare them?</p>
+
+  <div class="code">
+    <div class="code-file">in the code · <b>neuron.py</b></div>
+<pre>def score(self, switches):
+    total = self.bias
+    for weight, switch in zip(self.weights, switches):
+        total += weight * switch   <span class="c"># off switch: weight x 0 = nothing</span>
+    return total</pre>
+  </div>
+</section>
+
+<!-- 4 -->
+<section class="chapter" id="wrong">
+  <div class="num">Chapter 4</div>
+  <h2>How wrong was it?</h2>
+  <p>The simplest idea: compare the score with the answer directly. Call the difference the
+  <b>miss</b>:</p>
+  <p class="m" style="font-size:20px">miss = score − answer</p>
+  <p>Its sign says which way the neuron was off: positive means it said “odd” too strongly, negative
+  means not strongly enough. To learn, we'll push the score the opposite way to the miss. Try it.</p>
+
+  <div class="pause">Set the answer to odd, the mode to raw, and drag the score to +3. Was the neuron
+    right? Which way does the push go?</div>
+
+  <div class="scene">
+    <div class="scene-title">the miss: raw score vs squashed</div>
+    <div class="row" style="margin-bottom:12px">
+      <label>answer</label>
+      <button id="sq-odd" aria-pressed="true">odd (1)</button>
+      <button id="sq-even" aria-pressed="false">even (0)</button>
+      <label>compare</label>
+      <button id="sq-raw" aria-pressed="true">raw score</button>
+      <button id="sq-sig" aria-pressed="false">squashed</button>
+    </div>
+    <svg id="sq-chart" viewBox="0 0 600 240" role="img" aria-label="Score on the x axis, the value compared with the answer on the y axis"></svg>
+    <div class="controls">
+      <label for="sq-z">score</label><input id="sq-z" type="range" min="-6" max="6" step="0.1" value="3"><output id="sq-z-v"></output>
+    </div>
+    <div class="readout" id="sq-out" style="margin-top:14px"></div>
+  </div>
+
+  <p>With the raw score, a neuron that's <i>sure and right</i> (score +3 for an odd number) gets a
+  miss of +2 and is pushed back towards “even”. It's punished for being right. The surer it gets, the
+  harder it's punished. In the training scene below you can turn the squash off and watch the weights
+  run away to infinity.</p>
+  <p>The fix is to squeeze the score into the range 0 to 1 <i>before</i> comparing it with the answer.
+  Very positive becomes nearly 1, very negative becomes nearly 0, and 0 becomes 0.5, “no idea”. Switch
+  to <b>squashed</b> above and drag again: now a score of +3 becomes 0.95, the miss is a tiny −0.05,
+  and the push is a little nudge in the <i>right</i> direction.</p>
+  <p>That S-shaped squeeze is called the <b>sigmoid</b>, and its output is the neuron's
+  <b>confidence</b> that the number is odd. Over 0.5, the guess is odd.</p>
+  <div class="tablewrap"><table>
+    <tr><th>number</th><th>answer</th><th>confidence</th><th>miss</th><th>meaning</th></tr>
+    <tr><td>4817</td><td>1 (odd)</td><td>0.9</td><td class="red">−0.1</td><td>right, but could be surer</td></tr>
+    <tr><td>4817</td><td>1 (odd)</td><td>0.5</td><td class="red">−0.5</td><td>no idea</td></tr>
+    <tr><td>6890</td><td>0 (even)</td><td>0.8</td><td class="blue">+0.8</td><td>confidently wrong</td></tr>
+  </table></div>
+  <p class="muted" style="margin-top:16px">Rosenblatt's perceptron used a hard step instead (fire or
+  don't), and on this task that works too. The smooth version earns its place in two ways. It says
+  <i>how</i> wrong, not just wrong. And once neurons are stacked in layers, the blame has to flow back
+  through each one, which needs a curve, not a cliff.</p>
+
+  <div class="code">
+    <div class="code-file">in the code · <b>neuron.py</b> and <b>grade.py</b></div>
+<pre>def squash(score):
+    """Squeeze any score, however big or small, into 0..1. Proper name: the sigmoid."""
+    return 1 / (1 + math.exp(-score))
+
+def miss_of(neuron, switches, answer):
+    return neuron.confidence(switches) - answer      <span class="c"># confidence = squash(score)</span></pre>
+  </div>
+</section>
+
+<!-- 5 -->
+<section class="chapter" id="nudge">
+  <div class="num">Chapter 5</div>
+  <h2>The nudge</h2>
+  <p>Now the heart of it. After each example, move every weight that took part a little in the
+  direction that would have made the miss smaller:</p>
+  <p class="m" style="font-size:20px">each weight that was on −= learning rate × miss</p>
+  <p>Switches that were off didn't touch this answer, so their weights stay put. The bias is always
+  on, so it always moves. The <b>learning rate</b> (0.1 here) is how big “a little” is.</p>
+  <p>Step through it. The first two numbers are fixed so we can talk about them; after that they're random.</p>
+
+  <div class="scene">
+    <div class="scene-title">one nudge at a time</div>
+    <div class="row" style="margin-bottom:16px">
+      <button class="primary" id="st-next">Next example</button>
+      <button id="st-reset">Start over</button>
+    </div>
+    <div class="grid" id="st-grid"></div>
+    <div class="readout" id="st-out" style="margin-top:16px"></div>
+  </div>
+
+  <div class="pause">Before you press twice: the weight for “2nd digit is 8” goes up on 4817.
+    What happens to it on 6890?<small>6890 also has an 8 in second place, and it's even.</small></div>
+
+  <p>It comes right back down. It took part in an odd number and then in an even one, so the two
+  nudges roughly cancel out.</p>
+  <p>Now scale that up. Over thousands of examples, “2nd digit is 8” shows up in odd and even
+  numbers about equally, so it keeps getting pushed up and down and goes nowhere. But “4th digit is 7”
+  only ever shows up in odd numbers. Every time it appears, it gets pushed the same way.</p>
+  <p><b>The weights that matter grow. The ones that don't cancel themselves out.</b> Nobody tells the
+  neuron which digit matters; the data does. That's <b>gradient descent</b>: feel which way is
+  downhill for the miss, take a small step that way.</p>
+
+  <div class="code">
+    <div class="code-file">in the code · <b>nudge.py</b></div>
+<pre>confidence = neuron.confidence(switches)   <span class="c"># in train.py: guess,</span>
+miss = confidence - answer                 <span class="c"># see how wrong,</span>
+nudge(neuron, switches, miss, LEARNING_RATE)   <span class="c"># move the weights</span>
+
+def nudge(neuron, switches, miss, learning_rate):   <span class="c"># in nudge.py</span>
+    for switch_number, switch in enumerate(switches):
+        neuron.weights[switch_number] -= learning_rate * miss * switch   <span class="c"># off switch: moves by 0</span>
+    neuron.bias -= learning_rate * miss</pre>
+  </div>
+</section>
+
+<!-- 6 -->
+<section class="chapter" id="train">
+  <div class="num">Chapter 6</div>
+  <h2>Two thousand nudges later</h2>
+  <p>Now let it run for real: 2,000 training numbers, a nudge on each, five passes through the pile.
+  Each pass is called an <b>epoch</b>.</p>
+  <div class="pause">If it gets all 2,000 right, how do we know it learned the rule and didn't just
+    memorise 2,000 answers?</div>
+  <p>We keep 1,000 <i>other</i> numbers aside and never nudge on them. That's the <b>test set</b>.
+  If it's right on those, it found the rule. It's the same reason an exam doesn't reuse the homework
+  questions.</p>
+  <p>The grid shows all forty weights: <span class="blue">blue</span> is positive (pushes towards odd),
+  <span class="red">red</span> is negative (pushes towards even), and brighter means bigger.</p>
+
+  <div class="scene">
+    <div class="scene-title">training</div>
+    <div class="row" style="margin-bottom:16px">
+      <button class="primary" id="tr-play">Play</button>
+      <button id="tr-reset">Reset</button>
+      <label for="tr-rule">rule</label>
+      <select id="tr-rule">
+        <option value="odd">is it odd?</option>
+        <option value="div3">divisible by 3?</option>
+      </select>
+      <label for="tr-lr">learning rate</label>
+      <select id="tr-lr">
+        <option value="0.01">0.01</option>
+        <option value="0.1" selected>0.1</option>
+        <option value="1">1</option>
+      </select>
+      <label for="tr-squash">squash</label>
+      <select id="tr-squash">
+        <option value="on" selected>sigmoid</option>
+        <option value="off">none (raw score)</option>
+      </select>
+    </div>
+    <div class="grid" id="tr-grid"></div>
+    <div class="stats" style="margin:18px 0 8px">
+      <div class="stat"><b id="tr-epoch">0 / 5</b><span>epoch</span></div>
+      <div class="stat"><b id="tr-seen">0</b><span>nudges</span></div>
+      <div class="stat"><b id="tr-acc" class="blue">–</b><span>test accuracy</span></div>
+      <div class="stat"><b id="tr-base" class="muted">–</b><span>always say “<span id="tr-base-label">even</span>”</span></div>
+    </div>
+    <svg id="tr-chart" viewBox="0 0 600 200" role="img" aria-label="Test accuracy over training"></svg>
+  </div>
+
+  <p>Things to notice:</p>
+  <ul>
+    <li>Before any training it scores about 50%. Every confidence is exactly 0.5, so it says “even” to
+      everything, and half of all numbers are even. That's a coin flip.</li>
+    <li>It reaches 100% on the test numbers within the first epoch, on numbers it never trained on.</li>
+    <li>The top three rows stay dim. The bottom row turns into stripes.</li>
+  </ul>
+  <div class="pause">Predict, then try: learning rate 0.01? Then learning rate 1 with the squash
+    off?<small>One is slow. One is a disaster.</small></div>
+
+  <div class="code">
+    <div class="code-file">in the code · <b>train.py</b></div>
+<pre>train = examples[:2000]   <span class="c"># to learn from</span>
+test = examples[2000:]    <span class="c"># never learned from; checks it found the rule, not the answers</span>
+
+for round_number in range(1, ROUNDS + 1):
+    rng.shuffle(train)
+    for number, switches, answer in train:
+        nudge(neuron, switches, answer, LEARNING_RATE)
+    report(f'round {round_number}')</pre>
+  </div>
+</section>
+
+<!-- 7 -->
+<section class="chapter" id="mind">
+  <div class="num">Chapter 7</div>
+  <h2>Reading the neuron's mind</h2>
+  <p>Here are the final weights from running <code>python3 train.py</code> in the repo. Type a number
+  to see which four it uses.</p>
+
+  <div class="scene">
+    <div class="scene-title">final weights, from train.py</div>
+    <div class="row" style="margin-bottom:16px">
+      <label for="mi-num">number</label>
+      <input id="mi-num" type="number" min="0" max="9999" value="4817">
+    </div>
+    <div class="grid" id="final-grid"></div>
+    <div class="readout" id="mi-out" style="margin-top:16px"></div>
+  </div>
+
+  <div class="pause">This grid has the same 4 × 10 shape as the switches in chapter 2. Is it the same thing?</div>
+  <p>No, and it's easy to mix them up. The switches are the <i>input</i>: they change with every
+  number, and they're only ever 0 or 1. The weights are the <i>memory</i>: what training left behind.
+  They're fixed now, and they can be any number, including negative ones. They aren't probabilities
+  either. A probability only appears at the very end, after the squash.</p>
+  <p>Rows 1 to 3 sit near zero, so the first three digits are ignored. Row 4 alternates, about
+  <span class="red">−4.6</span> for 0, 2, 4, 6, 8 and <span class="blue">+4.6</span> for 1, 3, 5, 7, 9.
+  Read it as a sentence: <i>ignore everything except the last digit, and check whether that digit is
+  odd.</i> That's <code>n % 2</code>, written in weights. Nobody wrote it down.</p>
+
+  <div class="code">
+    <div class="code-file">in the code · <b>train.py</b> prints this at the end</div>
+<pre>4817:
+    bias                        -0.01
+  + weight for "digit 1 is 4"   -0.18
+  + weight for "digit 2 is 8"   +0.11
+  + weight for "digit 3 is 1"   +0.06
+  + weight for "digit 4 is 7"   +4.55
+  = score                       +4.54
+    confidence = squash(score)   0.99   ->  guess: odd</pre>
+  </div>
+</section>
+
+<!-- 8 -->
+<section class="chapter" id="break">
+  <div class="num">Chapter 8</div>
+  <h2>One neuron, or four?</h2>
+  <p>It's tempting to see the four rows as four neurons, one per digit. But it's one: all forty
+  switches feed into a single sum, and there's a single answer at the end. The rows are only how we lay
+  the weights out for us to read.</p>
+
+  <div class="scene">
+    <div class="scene-title">what we built: 40 switches, one neuron</div>
+    <svg id="wire-one" viewBox="0 0 600 260" role="img" aria-label="Forty switches in four groups, all wired into one neuron"></svg>
+  </div>
+
+  <p>One neuron is enough for odd and even. Go back to the training scene, switch the rule to
+  <b>divisible by 3?</b>, and press Play.</p>
+  <div class="pause">Predict first: will it get to 100% again?</div>
+  <p>It won't. Only a third of numbers are divisible by 3, so untrained, saying “no” to everything,
+  it already scores about 67%. Training then makes it slightly <i>worse</i>, settling in the
+  mid-60s.</p>
+  <p>Whether a number is divisible by 3 depends on all its digits <i>together</i> (on their sum). A 5 in
+  first place is good news if the rest add up to 1, and bad news if they add up to 2. One sum of fixed
+  weights can't say “this digit matters, <i>depending on</i> the others”.</p>
+  <p>So the four-neuron idea comes back, in a stronger form: a row of neurons that each look at
+  <i>all</i> the switches, each free to learn its own combination, and one more neuron that reads
+  their answers. That middle row is a <b>hidden layer</b>.</p>
+
+  <div class="scene">
+    <div class="scene-title">next experiment: a hidden layer</div>
+    <svg id="wire-hidden" viewBox="0 0 600 260" role="img" aria-label="Forty switches wired into four hidden neurons, which feed one output neuron"></svg>
+  </div>
+  <p class="muted">Why must each hidden neuron see every digit? If each one only saw its own digit,
+  the final neuron would still just be adding up one opinion per digit, which is what we already have.</p>
+
+  <div class="code">
+    <div class="code-file">try it in the code · <b>oracle.py</b></div>
+<pre>def oracle(number):
+    return 1 if number % 3 == 0 else 0     <span class="c"># gets stuck around 64%</span></pre>
+  </div>
+</section>
+
+<!-- 9 -->
+<section class="chapter" id="code">
+  <div class="num">Chapter 9</div>
+  <h2>The map: page, code, proper names</h2>
+  <p>Everything above is six short files in <code>experiments/003-teaching-a-net-tic-tac-toe/</code>.
+  Read them in this order:</p>
+  <div class="tablewrap"><table>
+    <tr><th>chapter</th><th>file</th><th>names in the code</th></tr>
+    <tr><td>0 · a brain cell</td><td><code>neuron.py</code></td><td><code>Neuron</code>, <code>weights</code>, <code>bias</code></td></tr>
+    <tr><td>1 · the answer key</td><td><code>oracle.py</code></td><td><code>oracle(number)</code></td></tr>
+    <tr><td>2 · what it sees</td><td><code>switches.py</code></td><td><code>switches_for(number)</code>, <code>switch_for()</code></td></tr>
+    <tr><td>3 · weights and a score</td><td><code>neuron.py</code></td><td><code>score()</code></td></tr>
+    <tr><td>4 · how wrong, the squash</td><td><code>grade.py</code>, <code>neuron.py</code></td><td><code>miss_of()</code>, <code>squash()</code>, <code>confidence()</code></td></tr>
+    <tr><td>5 · the nudge</td><td><code>nudge.py</code></td><td><code>nudge()</code></td></tr>
+    <tr><td>6 · thousands of nudges</td><td><code>train.py</code></td><td><code>train</code>, <code>test</code>, <code>ROUNDS</code>, <code>report()</code></td></tr>
+    <tr><td>7 · reading its mind</td><td><code>train.py</code></td><td>the weight table, <code>explain(4817)</code></td></tr>
+  </table></div>
+
+  <p style="margin-top:20px">Every textbook uses different words for the same things:</p>
+  <div class="tablewrap"><table>
+    <tr><th>on this page</th><th>standard name</th></tr>
+    <tr><td>the neuron</td><td>logistic regression, or a single neuron with a sigmoid activation</td></tr>
+    <tr><td>switches</td><td>one-hot encoded features</td></tr>
+    <tr><td>the weights and the bias</td><td>parameters &mdash; the numbers training sets</td></tr>
+    <tr><td>learning rate, rounds</td><td>hyperparameters &mdash; the numbers you set</td></tr>
+    <tr><td>confidence</td><td>predicted probability</td></tr>
+    <tr><td>oracle's answers</td><td>labels, ground truth</td></tr>
+    <tr><td>miss, and the nudge rule</td><td>the gradient of cross-entropy loss</td></tr>
+    <tr><td>nudging one example at a time</td><td>stochastic gradient descent (SGD)</td></tr>
+    <tr><td>a pass through the data</td><td>an epoch</td></tr>
+    <tr><td>scoring well on unseen numbers</td><td>generalisation</td></tr>
+  </table></div>
+
+  <p style="margin-top:20px"><b>Is this a neural network?</b> It's the smallest one: a single neuron.
+  A neural network stacks many of them, so that the outputs of one layer become the switches for the
+  next. Data, neuron, grade and nudge all stay the same. The network gets bigger, and the nudge has to
+  pass blame back through the layers, which is called <b>backpropagation</b>.</p>
+</section>
+
+<!-- 10 -->
+<section class="chapter" id="read">
+  <div class="num">Chapter 10</div>
+  <h2>Where to go next</h2>
+  <ol class="reading">
+    <li><a href="https://www.3blue1brown.com/topics/neural-networks">3Blue1Brown, <i>Neural Networks</i></a>.
+      The videos that inspired this page. Watch the first two; you'll recognise the weights and the nudge.</li>
+    <li><a href="https://en.wikipedia.org/wiki/Perceptron">Wikipedia: <i>Perceptron</i></a>.
+      The history from chapter 0: McCulloch and Pitts, Rosenblatt, and why one neuron has limits.</li>
+    <li><a href="http://neuralnetworksanddeeplearning.com/chap1.html">Michael Nielsen, <i>Neural Networks and Deep Learning</i>, chapter 1</a>.
+      A free book that goes from perceptrons to sigmoid neurons to gradient descent, the same path as this page.</li>
+    <li><a href="https://developers.google.com/machine-learning/crash-course/logistic-regression">Google's Machine Learning Crash Course: logistic regression</a>.
+      A short, practical look at exactly the neuron on this page.</li>
+    <li><a href="https://www.youtube.com/watch?v=VMj-3S1tku0">Andrej Karpathy, <i>The spelled-out intro to neural networks and backpropagation</i></a>.
+      Builds hidden layers and backpropagation from scratch in Python: the step after this one.</li>
+    <li><a href="https://cs231n.github.io/linear-classify/">Stanford CS231n notes: linear classification</a>.
+      The more formal maths, once the ideas feel familiar.</li>
+  </ol>
+</section>
+
+<footer>experiments-with-ai · 003 · the live scenes on this page run the same neuron and nudge
+rule as train.py, with their own random numbers, so exact values differ slightly.</footer>
+</main>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const ORD = ['1st', '2nd', '3rd', '4th'];
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const sigmoid = (z) => 1 / (1 + Math.exp(-z));
+  const lit = (n) => [...String(n).padStart(4, '0')].map((d, i) => i * 10 + Number(d));
+  const signed = (v, d = 2) => (v < 0 ? '−' : '+') + Math.abs(v).toFixed(d);
+  const clampNum = (el) => Math.max(0, Math.min(9999, Math.floor(Number(el.value) || 0)));
+  const pad = (n) => String(n).padStart(4, '0');
+  const svgEl = (tag, attrs) => {
+    const e = document.createElementNS('http://www.w3.org/2000/svg', tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  };
+
+  function rng(seed) {   // small seeded random generator (mulberry32)
+    return () => {
+      seed = (seed + 0x6D2B79F5) | 0;
+      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function shuffle(a, r) {
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(r() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  // Two buttons that act as a pair of radio options.
+  function toggle(a, b, onChange) {
+    const set = (first) => { a.setAttribute('aria-pressed', first); b.setAttribute('aria-pressed', !first); onChange(); };
+    a.addEventListener('click', () => set(true));
+    b.addEventListener('click', () => set(false));
+    return () => a.getAttribute('aria-pressed') === 'true';
+  }
+
+  // The sum for one number, one line per weight: "score = bias ... + weight[...] ... = total".
+  function sumLines(n, w, b) {
+    const s = pad(n), on = lit(n);
+    let total = b;
+    const lines = [`score =   bias                     ${signed(b)}`];
+    on.forEach((i, j) => {
+      total += w[i];
+      const name = `weight for "digit ${j + 1} is ${s[j]}"`;
+      lines.push(`        + ${name.padEnd(26)} ${signed(w[i])}`);
+    });
+    lines.push(`        = <span class="yellow">${signed(total)}</span>`);
+    return { text: lines.join('\n'), total };
+  }
+
+  // Build a 4 x 10 grid (header row of digit values, one row per digit place). Returns its 40 cells.
+  function makeGrid(el) {
+    el.append(Object.assign(document.createElement('div'), { className: 'h', textContent: 'digit' }));
+    for (let v = 0; v < 10; v++) el.append(Object.assign(document.createElement('div'), { className: 'h', textContent: v }));
+    const cells = [];
+    for (let p = 0; p < 4; p++) {
+      el.append(Object.assign(document.createElement('div'), { className: 'rl', textContent: ORD[p] }));
+      for (let v = 0; v < 10; v++) {
+        const c = document.createElement('div');
+        c.className = 'cell';
+        el.append(c);
+        cells.push(c);
+      }
+    }
+    return cells;
+  }
+
+  // Colour each weight: blue positive, red negative, brightness by size relative to the biggest.
+  function paintWeights(cells, w, { ring = [], decimals = 1, labels = true } = {}) {
+    const scale = Math.max(0.3, ...Array.from(w, Math.abs));
+    cells.forEach((c, i) => {
+      const v = w[i], a = Math.min(1, Math.abs(v) / scale);
+      c.className = 'cell' + (ring.includes(i) ? ' ring' : '');
+      c.style.background = Math.abs(v) < 1e-9 ? 'transparent'
+        : v > 0 ? `rgba(88,196,221,${(0.12 + 0.78 * a).toFixed(3)})` : `rgba(252,98,85,${(0.12 + 0.78 * a).toFixed(3)})`;
+      c.style.color = a > 0.55 ? '#0d0f12' : '';
+      const rounded = Number(v.toFixed(decimals));
+      c.textContent = !labels ? '' : Math.abs(v) >= 100 ? (v > 0 ? '+99+' : '−99+')
+        : rounded === 0 ? '0' : signed(v, decimals).replace(/^([+−])0\./, '$1.');
+      if (rounded === 0) c.classList.add('zero');
+    });
+  }
+
+  // ---- Chapter 0: a brain cell ----------------------------------------------------------
+  const BIO = [
+    { name: "it's sunny", on: true, w: 2 },
+    { name: 'a friend is coming', on: false, w: 1.5 },
+    { name: "I'm tired", on: true, w: -3 },
+  ];
+  let bioThreshold = 1;
+  (function buildBio() {
+    const box = $('bio-controls');
+    BIO.forEach((inp, k) => {
+      const lab = document.createElement('label');
+      const cb = Object.assign(document.createElement('input'), { type: 'checkbox', checked: inp.on, id: `bio-on-${k}` });
+      lab.style.display = 'flex'; lab.style.gap = '8px'; lab.style.alignItems = 'center';
+      lab.append(cb, ` ${inp.name}`);
+      const r = Object.assign(document.createElement('input'), { type: 'range', min: -4, max: 4, step: 0.5, value: inp.w, id: `bio-w-${k}` });
+      r.setAttribute('aria-label', `strength of ${inp.name}`);
+      const o = document.createElement('output');
+      cb.addEventListener('change', () => { inp.on = cb.checked; renderBio(); });
+      r.addEventListener('input', () => { inp.w = Number(r.value); renderBio(); });
+      inp.out = o;
+      box.append(lab, r, o);
+    });
+    const lab = Object.assign(document.createElement('label'), { textContent: 'threshold', htmlFor: 'bio-t' });
+    const r = Object.assign(document.createElement('input'), { type: 'range', min: -4, max: 4, step: 0.5, value: bioThreshold, id: 'bio-t' });
+    const o = document.createElement('output');
+    r.addEventListener('input', () => { bioThreshold = Number(r.value); renderBio(); });
+    box.append(lab, r, o);
+    BIO.thresholdOut = o;
+  })();
+  function renderBio() {
+    const total = BIO.reduce((s, i) => s + (i.on ? i.w : 0), 0);
+    const fires = total >= bioThreshold;
+    const svg = $('bio');
+    svg.replaceChildren();
+    const cx = 400, cy = 120;
+    BIO.forEach((inp, k) => {
+      const y = 50 + k * 70;
+      const col = inp.w >= 0 ? 'var(--blue)' : 'var(--red)';
+      svg.append(svgEl('line', { x1: 150, y1: y, x2: cx - 40, y2: cy, stroke: col,
+        'stroke-width': 1 + Math.abs(inp.w) * 2, opacity: inp.on ? 1 : 0.18 }));
+      svg.append(svgEl('circle', { cx: 150, cy: y, r: 7, fill: inp.on ? 'var(--yellow)' : 'var(--line)' }));
+      const t = svgEl('text', { x: 138, y: y + 4, 'text-anchor': 'end' });
+      t.textContent = inp.name; svg.append(t);
+      const tw = svgEl('text', { x: 230, y: y + (cy - y) * 0.35 - 6, 'text-anchor': 'middle', fill: col });
+      tw.textContent = signed(inp.w, 1); tw.style.fill = col; svg.append(tw);
+      inp.out.textContent = signed(inp.w, 1);
+    });
+    svg.append(svgEl('line', { x1: cx + 46, y1: cy, x2: 540, y2: cy, stroke: fires ? 'var(--yellow)' : 'var(--line)', 'stroke-width': 4 }));
+    svg.append(svgEl('circle', { cx, cy, r: 46, fill: fires ? 'var(--yellow)' : 'var(--panel)', stroke: 'var(--yellow)', 'stroke-width': 2 }));
+    const tt = svgEl('text', { x: cx, y: cy + 5, 'text-anchor': 'middle' });
+    tt.textContent = signed(total, 1); tt.style.fill = fires ? '#0d0f12' : 'var(--fg)'; tt.style.fontSize = '16px';
+    svg.append(tt);
+    const out = svgEl('text', { x: 560, y: cy + 4, 'text-anchor': 'middle' });
+    out.textContent = fires ? 'run!' : 'stay in'; out.style.fill = fires ? 'var(--yellow)' : 'var(--muted)';
+    svg.append(out);
+    BIO.thresholdOut.textContent = signed(bioThreshold, 1);
+    const parts = BIO.map((i) => `${i.on ? 1 : 0} × ${signed(i.w, 1)}`).join('  +  ');
+    $('bio-out').innerHTML = `total = ${parts} = <span class="yellow">${signed(total, 1)}</span>
+${signed(total, 1)} ${fires ? '≥' : '<'} threshold ${signed(bioThreshold, 1)}  →  <b>${fires ? 'fires: go for a run' : 'stays quiet: stay in'}</b>`;
+  }
+  renderBio();
+
+  // ---- Chapter 2a: one input, the raw number --------------------------------------------
+  const rwX = (n) => 48 + n / 9999 * 540, rwY = (p) => 150 - p * 130;
+  const rwCells = [];
+  for (let n = 4810; n < 4830; n++) {
+    const c = document.createElement('div');
+    c.className = 'scell';
+    $('rw-strip').append(c);
+    rwCells.push([n, c]);
+  }
+  function renderRaw() {
+    const w = Number($('rw-w').value), b = Number($('rw-b').value);
+    const conf = (n) => sigmoid(b + w * n / 10000);
+    $('rw-w-v').textContent = signed(w, 1); $('rw-b-v').textContent = signed(b, 1);
+    $('rw-formula').innerHTML = `score = bias + weight × (number ÷ 10,000)
+      = ${signed(b, 1)} ${signed(w, 1)} × (number ÷ 10,000)`;
+    let right = 0;
+    for (let n = 0; n < 10000; n++) if ((conf(n) > 0.5 ? 1 : 0) === n % 2) right++;
+    $('rw-acc').textContent = (right / 100).toFixed(1) + '%';
+    let d = '';
+    for (let n = 0; n <= 9999; n += 100) d += (d ? 'L' : 'M') + rwX(n).toFixed(1) + ' ' + rwY(conf(n)).toFixed(1);
+    $('rw-chart').innerHTML = `
+      <line class="axis" x1="48" y1="${rwY(0)}" x2="588" y2="${rwY(0)}"/>
+      <line class="base" x1="48" y1="${rwY(0.5)}" x2="588" y2="${rwY(0.5)}"/>
+      <text x="40" y="${rwY(1) + 4}" text-anchor="end">odd</text>
+      <text x="40" y="${rwY(0) + 4}" text-anchor="end">even</text>
+      ${[0, 2500, 5000, 7500, 9999].map((n) => `<text x="${rwX(n)}" y="166" text-anchor="middle">${n}</text>`).join('')}
+      <path class="curve" d="${d}"/>`;
+    for (const [n, c] of rwCells) {
+      const g = conf(n) > 0.5 ? 1 : 0, ok = g === n % 2;
+      c.className = 'scell ' + (ok ? 'right' : 'wrong');
+      c.innerHTML = `<b class="${n % 2 ? 'blue' : 'red'}">${n}</b>says ${g ? 'odd' : 'even'} ${ok ? '✓' : '✗'}`;
+    }
+  }
+  $('rw-w').addEventListener('input', renderRaw);
+  $('rw-b').addEventListener('input', renderRaw);
+  renderRaw();
+
+  // ---- Chapter 2b: the switches ---------------------------------------------------------
+  const encCells = makeGrid($('enc-grid'));
+  function renderEnc() {
+    const n = clampNum($('enc-num')), on = lit(n);
+    encCells.forEach((c, i) => {
+      const isOn = on.includes(i);
+      c.className = 'cell' + (isOn ? ' lit' : ' zero');
+      c.style.background = ''; c.style.color = '';
+      c.textContent = isOn ? '1' : '0';
+    });
+    $('enc-note').textContent = `${pad(n)} → 4 switches on, 36 off`;
+  }
+  $('enc-num').addEventListener('input', renderEnc);
+  renderEnc();
+
+  // Final weights and bias from `python3 train.py` (rounded to 2 decimals).
+  const FINAL = Float64Array.from([
+    0.07, -0.0, -0.06, -0.0, -0.18, 0.01, -0.04, 0.12, -0.02, 0.1,
+    -0.16, -0.09, 0.01, -0.07, -0.05, 0.06, 0.1, 0.02, 0.11, 0.07,
+    0.05, 0.06, -0.01, -0.08, -0.07, 0.02, -0.02, 0.06, -0.04, 0.03,
+    -4.55, 4.57, -4.52, 4.63, -4.49, 4.52, -4.64, 4.55, -4.64, 4.57,
+  ]);
+  const FINAL_BIAS = -0.01;
+
+  // ---- Chapter 3: the score -------------------------------------------------------------
+  const scTrained = () => $('sc-trained').getAttribute('aria-pressed') === 'true';
+  function renderScore() {
+    const n = clampNum($('sc-num'));
+    const w = scTrained() ? FINAL : new Float64Array(40), b = scTrained() ? FINAL_BIAS : 0;
+    const { text } = sumLines(n, w, b);
+    $('sc-out').innerHTML = `${text}\n\n${scTrained() ? `a big positive score: the neuron leans <span class="blue">odd</span>.`
+      : 'every weight is 0, so the score is 0: no opinion yet.'}`;
+  }
+  toggle($('sc-fresh'), $('sc-trained'), renderScore);
+  $('sc-num').addEventListener('input', renderScore);
+  renderScore();
+
+  // ---- Chapter 4: raw score vs squashed -------------------------------------------------
+  const sqIsOdd = toggle($('sq-odd'), $('sq-even'), renderSq);
+  const sqIsRaw = toggle($('sq-raw'), $('sq-sig'), renderSq);
+  const qx = (z) => 60 + (z + 6) / 12 * 520, qy = (v) => 200 - (v + 0.6) / 2.4 * 185;
+  function renderSq() {
+    const z = Number($('sq-z').value), y = sqIsOdd() ? 1 : 0, raw = sqIsRaw();
+    const used = raw ? z : sigmoid(z), miss = used - y;
+    const guess = used > 0.5 ? 1 : 0, right = guess === y;
+    const push = -miss;   // the nudge moves the score against the miss
+    $('sq-z-v').textContent = signed(z, 1);
+    let curve = '';
+    for (let t = -6; t <= 6.001; t += 0.1) curve += (curve ? 'L' : 'M') + qx(t).toFixed(1) + ' ' + qy(sigmoid(t)).toFixed(1);
+    const yTop = qy(1.8), yBot = qy(-0.6);
+    $('sq-chart').innerHTML = `
+      <defs><clipPath id="sq-clip"><rect x="60" y="${yTop}" width="520" height="${yBot - yTop}"/></clipPath></defs>
+      <line class="axis" x1="60" y1="${qy(0)}" x2="580" y2="${qy(0)}"/>
+      <line class="axis" x1="${qx(0)}" y1="${yTop}" x2="${qx(0)}" y2="${yBot}"/>
+      ${[0, 0.5, 1].map((v) => `<text x="52" y="${qy(v) + 4}" text-anchor="end">${v}</text>`).join('')}
+      ${[-6, -3, 0, 3, 6].map((t) => `<text x="${qx(t)}" y="226" text-anchor="middle">${t}</text>`).join('')}
+      <text x="320" y="240" text-anchor="middle">score</text>
+      <line x1="60" y1="${qy(y)}" x2="580" y2="${qy(y)}" stroke="var(--yellow)" stroke-dasharray="6 4"/>
+      <text x="576" y="${qy(y) - 6}" text-anchor="end" style="fill:var(--yellow)">the answer: ${y}</text>
+      <g clip-path="url(#sq-clip)">
+        <line x1="${qx(-6)}" y1="${qy(-6)}" x2="${qx(6)}" y2="${qy(6)}" stroke="var(--red)" stroke-width="${raw ? 3 : 1.5}" opacity="${raw ? 1 : 0.3}"/>
+        <path class="curve" d="${curve}" opacity="${raw ? 0.3 : 1}" style="stroke-width:${raw ? 1.5 : 3}"/>
+        <line x1="${qx(z)}" y1="${qy(used)}" x2="${qx(z)}" y2="${qy(y)}" stroke="${miss > 0 ? 'var(--blue)' : 'var(--red)'}" stroke-width="3"/>
+        <circle cx="${qx(z)}" cy="${qy(used)}" r="7" fill="var(--yellow)"/>
+      </g>
+      <text x="${raw ? 400 : 120}" y="${raw ? qy(1.5) - 6 : qy(0.15)}" style="fill:${raw ? 'var(--red)' : 'var(--blue)'}">${raw ? 'raw: the score itself' : 'squashed: always 0..1'}</text>`;
+    const warn = right && Math.sign(push) !== (y ? 1 : -1) && Math.abs(miss) > 0.05;
+    $('sq-out').innerHTML =
+`compared with the answer: ${raw ? `the score itself = ${signed(used)}` : `squash(${signed(z, 1)}) = ${used.toFixed(3)}`}
+guess      = ${guess ? '<span class="blue">odd</span>' : '<span class="red">even</span>'}  ${right ? '(right)' : '(wrong)'}
+miss       = ${raw ? signed(used) : used.toFixed(3)} − ${y} = <span class="${miss > 0 ? 'blue' : 'red'}">${signed(miss, 3)}</span>
+the nudge  = pushes the score ${push > 0 ? 'up, towards odd' : 'down, towards even'}, by an amount ∝ ${Math.abs(miss).toFixed(2)}
+${warn ? '<span class="red">⚠ right and sure, but pushed towards the wrong answer: punished for being right</span>'
+  : right && Math.abs(miss) < 0.1 ? '<span class="blue">right and sure: almost no push. good.</span>' : ''}`;
+  }
+  $('sq-z').addEventListener('input', renderSq);
+  renderSq();
+
+  // ---- Chapter 5: the stepper -----------------------------------------------------------
+  const stCells = makeGrid($('st-grid'));
+  const SCRIPT = [4817, 6890];
+  let st;
+  function stReset() {
+    st = { w: new Float64Array(40), b: 0, k: 0, r: rng(7) };
+    paintWeights(stCells, st.w, { decimals: 2 });
+    $('st-out').innerHTML = 'All 41 weights start at 0. Press <span class="blue">Next example</span>.';
+  }
+  function stNext() {
+    const n = st.k < SCRIPT.length ? SCRIPT[st.k] : Math.floor(st.r() * 10000);
+    st.k++;
+    const y = n % 2, on = lit(n), lr = 0.1;
+    const { text, total } = sumLines(n, st.w, st.b);
+    const p = sigmoid(total), miss = p - y, step = -lr * miss;
+    on.forEach((i) => { st.w[i] += step; });
+    st.b += step;
+    paintWeights(stCells, st.w, { decimals: 2, ring: on });
+    $('st-out').innerHTML =
+`example ${st.k}:  <span class="yellow">${pad(n)}</span>  →  oracle says ${y ? '<span class="blue">odd</span> (answer = 1)' : '<span class="red">even</span> (answer = 0)'}
+
+${text}
+confidence = squash(${signed(total)}) = ${p.toFixed(3)}
+miss       = ${p.toFixed(3)} − ${y} = <span class="${miss > 0 ? 'blue' : 'red'}">${signed(miss, 3)}</span>
+nudge      = −0.1 × (${signed(miss, 3)}) = <span class="yellow">${signed(step, 3)}</span> to each ringed weight and to the bias`;
+  }
+  $('st-next').addEventListener('click', stNext);
+  $('st-reset').addEventListener('click', stReset);
+  stReset();
+
+  // ---- Chapter 6: training --------------------------------------------------------------
+  const trCells = makeGrid($('tr-grid'));
+  const RULES = { odd: (n) => n % 2, div3: (n) => (n % 3 === 0 ? 1 : 0) };
+  const EPOCHS = 5, TRAIN = 2000, TEST = 1000, RECORD_EVERY = 100, BLOWN = 1e6;
+  const PER_FRAME = reduced ? 2000 : 25;
+  let tr;
+
+  function trReset() {
+    if (tr) tr.running = false;
+    const rule = RULES[$('tr-rule').value], r = rng(0);
+    const numbers = shuffle(Array.from({ length: 10000 }, (_, i) => i), r).slice(0, TRAIN + TEST);
+    const ex = numbers.map((n) => ({ on: lit(n), y: rule(n) }));
+    tr = { w: new Float64Array(40), b: 0, lr: Number($('tr-lr').value), squash: $('tr-squash').value === 'on', r,
+           train: ex.slice(0, TRAIN), test: ex.slice(TRAIN), idx: 0, epoch: 0, seen: 0, running: false, blown: false, hist: [] };
+    const ones = tr.test.filter((e) => e.y).length / TEST;
+    tr.base = Math.max(ones, 1 - ones);
+    $('tr-base-label').textContent = ones > 0.5 ? (rule === RULES.odd ? 'odd' : 'yes') : (rule === RULES.odd ? 'even' : 'no');
+    $('tr-base').textContent = (tr.base * 100).toFixed(1) + '%';
+    tr.hist.push([0, testAcc()]);
+    $('tr-play').textContent = 'Play';
+    trRender();
+  }
+
+  function predict(on) {
+    const score = tr.b + tr.w[on[0]] + tr.w[on[1]] + tr.w[on[2]] + tr.w[on[3]];
+    return tr.squash ? sigmoid(score) : score;
+  }
+  function testAcc() { return tr.test.filter((e) => (predict(e.on) > 0.5 ? 1 : 0) === e.y).length / TEST; }
+
+  function trFrame() {
+    if (!tr.running) return;
+    for (let k = 0; k < PER_FRAME && tr.epoch < EPOCHS; k++) {
+      if (tr.idx === 0) shuffle(tr.train, tr.r);
+      const e = tr.train[tr.idx];
+      const miss = predict(e.on) - e.y;
+      for (const i of e.on) tr.w[i] -= tr.lr * miss;
+      tr.b -= tr.lr * miss;
+      tr.idx++; tr.seen++;
+      if (!(Math.abs(tr.b) < BLOWN)) { tr.blown = true; break; }
+      if (tr.seen % RECORD_EVERY === 0) tr.hist.push([tr.seen, testAcc()]);
+      if (tr.idx === TRAIN) { tr.idx = 0; tr.epoch++; }
+    }
+    trRender();
+    if (tr.blown) { tr.running = false; $('tr-play').textContent = 'Blew up'; return; }
+    if (tr.epoch >= EPOCHS) { tr.running = false; $('tr-play').textContent = 'Done'; return; }
+    requestAnimationFrame(trFrame);
+  }
+
+  function trRender() {
+    paintWeights(trCells, tr.w, { decimals: 1 });
+    $('tr-epoch').textContent = `${Math.min(tr.epoch + (tr.idx > 0 ? 1 : 0), EPOCHS)} / ${EPOCHS}`;
+    $('tr-seen').textContent = tr.seen.toLocaleString('en-US');
+    $('tr-acc').textContent = tr.blown ? 'blew up' : (tr.hist[tr.hist.length - 1][1] * 100).toFixed(1) + '%';
+    $('tr-acc').className = tr.blown ? 'red' : 'blue';
+    const X = (s) => 48 + s / (EPOCHS * TRAIN) * 540, Y = (a) => 172 - a * 156;
+    const pts = tr.hist.map(([s, a]) => `${X(s).toFixed(1)},${Y(a).toFixed(1)}`).join(' ');
+    const xt = [0, 2000, 4000, 6000, 8000, 10000];
+    const last = tr.hist[tr.hist.length - 1];
+    $('tr-chart').innerHTML = `
+      ${[0, 0.5, 1].map((a) => `<line class="axis" x1="48" y1="${Y(a)}" x2="588" y2="${Y(a)}"/><text x="40" y="${Y(a) + 4}" text-anchor="end">${a * 100}%</text>`).join('')}
+      ${xt.map((s) => `<text x="${X(s)}" y="192" text-anchor="middle">${s ? s / 1000 + 'k' : '0'}</text>`).join('')}
+      <line class="base" x1="48" y1="${Y(tr.base)}" x2="588" y2="${Y(tr.base)}"/>
+      <text x="588" y="${Y(tr.base) - 6}" text-anchor="end">always-same-answer line</text>
+      <polyline class="acc" points="${pts}"/>
+      <circle cx="${X(last[0])}" cy="${Y(last[1])}" r="4" fill="var(--blue)"/>
+      ${tr.blown ? `<text x="${Math.min(X(tr.seen), 560)}" y="${Y(0.5)}" text-anchor="middle" style="fill:var(--red);font-size:14px">weights ran off to infinity after ${tr.seen} nudges</text>` : ''}`;
+  }
+
+  $('tr-play').addEventListener('click', () => {
+    if (tr.epoch >= EPOCHS || tr.blown) trReset();
+    tr.running = !tr.running;
+    $('tr-play').textContent = tr.running ? 'Pause' : 'Play';
+    if (tr.running) requestAnimationFrame(trFrame);
+  });
+  $('tr-reset').addEventListener('click', trReset);
+  ['tr-rule', 'tr-lr', 'tr-squash'].forEach((id) => $(id).addEventListener('change', trReset));
+  trReset();
+
+  // ---- Chapter 7: reading its mind ------------------------------------------------------
+  const miCells = makeGrid($('final-grid'));
+  function renderMind() {
+    const n = clampNum($('mi-num'));
+    paintWeights(miCells, FINAL, { decimals: 1, ring: lit(n) });
+    const { text, total } = sumLines(n, FINAL, FINAL_BIAS);
+    const p = sigmoid(total);
+    $('mi-out').innerHTML = `${text}
+confidence = squash(${signed(total)}) = ${p.toFixed(3)}  →  guess: ${p > 0.5 ? '<span class="blue">odd</span>' : '<span class="red">even</span>'}`;
+  }
+  $('mi-num').addEventListener('input', renderMind);
+  renderMind();
+
+  // ---- Chapter 8: wiring diagrams -------------------------------------------------------
+  function drawWiring(svg, hidden) {
+    const dots = [];
+    for (let p = 0; p < 4; p++) for (let v = 0; v < 10; v++) dots.push([60, 18 + p * 60 + v * 5]);
+    const outN = [520, 130];
+    const mids = hidden ? [0, 1, 2, 3].map((k) => [330, 40 + k * 60]) : [];
+    const targets = hidden ? mids : [outN];
+    for (const [x, y] of dots) for (const [tx, ty] of targets)
+      svg.append(svgEl('line', { x1: x, y1: y, x2: tx, y2: ty, stroke: 'var(--blue)', 'stroke-width': 1, opacity: hidden ? 0.12 : 0.35 }));
+    for (const [tx, ty] of mids)
+      svg.append(svgEl('line', { x1: tx, y1: ty, x2: outN[0], y2: outN[1], stroke: 'var(--blue)', 'stroke-width': 2, opacity: 0.6 }));
+    for (const [x, y] of dots) svg.append(svgEl('circle', { cx: x, cy: y, r: 2, fill: 'var(--yellow)' }));
+    for (let p = 0; p < 4; p++) {
+      const t = svgEl('text', { x: 48, y: 18 + p * 60 + 26, 'text-anchor': 'end' });
+      t.textContent = ORD[p]; svg.append(t);
+    }
+    for (const [tx, ty] of mids) svg.append(svgEl('circle', { cx: tx, cy: ty, r: 16, fill: 'var(--panel)', stroke: 'var(--blue)', 'stroke-width': 2 }));
+    svg.append(svgEl('circle', { cx: outN[0], cy: outN[1], r: 26, fill: 'var(--panel)', stroke: 'var(--yellow)', 'stroke-width': 2 }));
+    svg.append(svgEl('line', { x1: outN[0] + 26, y1: outN[1], x2: 590, y2: outN[1], stroke: 'var(--yellow)', 'stroke-width': 3 }));
+    const lab = (x, y, s, fill) => { const t = svgEl('text', { x, y, 'text-anchor': 'middle' }); t.textContent = s; if (fill) t.style.fill = fill; svg.append(t); };
+    lab(60, 256, '40 switches');
+    lab(outN[0], outN[1] + 46, hidden ? 'output neuron' : 'one neuron', 'var(--yellow)');
+    if (hidden) lab(330, 256, 'hidden layer', 'var(--blue)');
+  }
+  drawWiring($('wire-one'), false);
+  drawWiring($('wire-hidden'), true);
+})();
+</script>
