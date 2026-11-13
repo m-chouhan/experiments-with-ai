@@ -155,7 +155,72 @@ pass back through each neuron, which needs a smooth curve, not a cliff.
 
 ---
 
+## Q6. The "what should the neuron see?" chart wasn't intuitive. What do odd and even mean on it?
+
+It plotted the neuron's *confidence* (an S-curve) with "odd" and "even" as the y-axis labels. That
+mixed two things: what the neuron says, and what the right answer is. A reader can't tell
+which is which.
+
+Better, and what part 1 now does: zoom in to 20 numbers (4810–4829) and draw `y = mx + b` as a
+real straight line. The right answers are dots: odd ones above a dashed middle line, even ones
+below, so the dots **zig-zag**. The rule is "score above the middle = says odd". Each number then
+gets a ✓ if its dot and the line are on the same side. Tilt and slide the line, and you can't get
+more than 11 of 20 (I checked every slider setting). Next to it, the same chart with one weight per
+last digit, as 10 sliders: the score becomes bars that *can* zig-zag, and 20 of 20 is easy.
+
+> **For the blog:** say what every mark on a chart means *before* the reader plays with it. And
+> put the right answer and the model's answer in different visual forms (dots vs line).
+
+---
+
+## Q7. Start part 2 with "a neuron is an array of weights and a bias"?
+
+Yes, once part 1 has built the intuition. Part 2 opens with: a neuron is a list of 40 weights and
+a bias. Expand 1010 into 40 switches, multiply and add, and one number comes out. Positive means
+odd, negative means even. That's the perceptron view (the sign of the score).
+
+One addition: part 2 then explains why we squash that score into a confidence. It isn't needed to
+*decide* (score > 0 and confidence > 0.5 are the same cut). It's needed to *learn* by how wrong
+the neuron was, without punishing it for being sure and right.
+
+---
+
+## Q8. How can a machine learn patterns from data? (The software engineer's block)
+
+I'm used to telling machines exactly what to do. "It figures it out" felt like magic. The first
+principles that unlocked it (part 1, "So why does that work?"):
+
+1. **The weights are the program.** The neuron's code is identical for every task. Its
+   behaviour lives entirely in 41 numbers, so learning means searching for numbers.
+2. **A weight is a tally of evidence.** In the mistake rule, each weight is just
+   (mistakes on odd numbers it was on for) minus (mistakes on even numbers it was on for).
+3. **Signal adds up, noise cancels.** Switches unrelated to the answer get pushed both ways
+   and go nowhere. Switches consistently linked to the answer get pushed one way every time.
+   Whatever survives thousands of pushes *is* the pattern. Nobody points at the last digit.
+4. **It stops when it's right.** Updates come only from errors, so once the pattern is in, the
+   weights stop moving.
+5. **It's too small to memorise.** 10,000 numbers, 41 weights. It can only keep things that are
+   true of thousands of numbers at once, which is why it works on unseen ones. Learning is compression.
+
+The software engineer's version: **TDD where the computer edits the code.** The examples are the
+test suite, the weights are the code, each failing test causes a tiny automatic edit, and the
+test set is the hidden tests. You still give instructions, one level up: not "how to tell odd
+from even" but "how to get less wrong". It works when three things are true. The template can
+express the answer. You can tell right from wrong. And each mistake says which way to move.
+
+I checked the mistake rule (on all 40 switches, starting from 0): about 28 mistakes, and 100% on
+all 10,000 numbers by 1,000 examples. The last row ends up as ±3 votes, and the other rows sit
+around ±1.
+
+---
+
 ## How to teach this (notes for the final blog)
+
+- **Two documents, two jobs.** Part 1 builds the mental model with no code from the repo:
+  weighted vote → one straight cut (AND/OR yes, XOR no) → the raw number can't zig-zag → one-hot
+  switches can → a loop that fixes its mistakes → why that works. Part 2 goes fast on those, then
+  builds the real thing: the sigmoid, the nudge, train/test, reading the weights, div-by-3 as
+  "its XOR", and a code map.
 
 - **Problem first, then the name.** Every definition (switches, score, sigmoid, miss, learning
   rate, hidden layer) is introduced only after the reader has hit the problem it solves.

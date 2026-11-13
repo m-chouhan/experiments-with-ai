@@ -34,6 +34,15 @@ The code is written to be *read*: six short files, one idea each, no libraries, 
 step of the loop spelled out where it happens rather than hidden behind a helper.
 [LEARNINGS.md](LEARNINGS.md) has the questions I hit while going through it, with answers.
 
+There are also two interactive explainers. Open them in a browser:
+
+1. [`explainer-1-how-a-neuron-learns.html`](explainer-1-how-a-neuron-learns.html): the mental
+   model, with no repo code. A neuron is a weighted vote and draws one straight cut. The right
+   inputs make odd vs even one cut apart, and a loop that fixes its mistakes finds the weights.
+2. [`explainer-2-even-or-odd-learned.html`](explainer-2-even-or-odd-learned.html): this folder's
+   code, chapter by chapter: the switches, the sigmoid, the nudge, training, reading the weights,
+   and where one neuron breaks.
+
 ---
 
 ## The big idea in four words
