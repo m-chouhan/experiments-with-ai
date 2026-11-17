@@ -1,0 +1,488 @@
+<title>More Inputs, One Cut</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=STIX+Two+Text:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Part 3, a side trip. One reading column like a lecture, broken up by dark "scene" panels where
+   the animations live: a chalkboard video turned into a page. Deliberately dark-only. */
+:root {
+  --bg: #0d0f12;
+  --panel: #14171c;
+  --line: #2a2f37;
+  --fg: #e9e6df;
+  --muted: #9aa0a8;
+  --blue: #58c4dd;
+  --red: #fc6255;
+  --yellow: #f4d345;
+  --serif: 'STIX Two Text', 'Times New Roman', Georgia, serif;
+  --sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg);
+  font: 17px/1.65 var(--sans);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 72px;
+}
+main { max-width: 720px; margin: 0 auto; }
+p { margin: 0 0 16px; max-width: 65ch; }
+ul { max-width: 65ch; }
+a { color: var(--blue); }
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--yellow); outline-offset: 2px; }
+code { font: 0.9em var(--mono); color: var(--yellow); }
+.m { font-family: var(--serif); font-style: italic; font-size: 1.08em; }
+.blue { color: var(--blue); } .red { color: var(--red); } .yellow { color: var(--yellow); } .muted { color: var(--muted); }
+
+.hero { padding-block: 80px 40px; }
+.kicker { font: 500 12px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+h1 { font: 600 clamp(40px, 8vw, 64px)/1.05 var(--serif); margin: 14px 0 20px; text-wrap: balance; }
+h1 em { font-weight: 400; color: var(--blue); }
+.lede { font: 400 21px/1.55 var(--serif); color: var(--fg); }
+
+.chapter { padding-block: 52px 20px; border-top: 1px solid var(--line); }
+.chapter .num { font: 500 12px var(--mono); letter-spacing: .14em; color: var(--yellow); text-transform: uppercase; }
+h2 { font: 600 32px/1.15 var(--serif); margin: 8px 0 18px; text-wrap: balance; }
+
+.pause {
+  margin: 24px 0; padding: 4px 0 4px 18px; border-left: 3px solid var(--yellow);
+  font: italic 400 20px/1.5 var(--serif); max-width: 60ch;
+}
+.pause small { display: block; font: 400 13px var(--mono); color: var(--muted); font-style: normal; margin-top: 6px; letter-spacing: .04em; }
+.lesson { margin: 28px 0 8px; padding: 14px 18px; border: 1px solid var(--line); border-radius: 6px; font: 400 19px/1.5 var(--serif); }
+.lesson::before { content: 'the picture to keep'; display: block; font: 500 11px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--yellow); margin-bottom: 6px; }
+
+.scene { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 20px; margin: 28px 0; }
+.scene-title { font: 500 11px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; }
+.sub { font: 500 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin: 16px 0 8px; }
+.row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.controls { display: grid; grid-template-columns: auto 1fr auto; gap: 8px 14px; align-items: center; margin-top: 14px; }
+.controls output { font: 500 14px var(--mono); color: var(--yellow); min-width: 5ch; text-align: right; font-variant-numeric: tabular-nums; }
+
+/* "in the code" box: where this chapter lives in the repo */
+.code { border: 1px solid var(--line); border-left: 3px solid var(--blue); border-radius: 4px; margin: 24px 0; background: var(--panel); }
+.code-file { font: 500 11px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); padding: 8px 14px; border-bottom: 1px solid var(--line); }
+.code-file b { color: var(--blue); font-weight: 500; text-transform: none; letter-spacing: 0; font-size: 13px; }
+.code pre { margin: 0; padding: 12px 14px; font: 13px/1.6 var(--mono); overflow-x: auto; color: var(--fg); }
+.code pre .c { color: var(--muted); }
+
+button, select, input[type=number] {
+  font: 500 14px var(--sans); color: var(--fg); background: var(--bg);
+  border: 1px solid var(--line); border-radius: 4px; padding: 8px 14px;
+}
+button { cursor: pointer; }
+button:hover { border-color: var(--muted); }
+button.primary { border-color: var(--blue); color: var(--blue); }
+button[aria-pressed=true] { border-color: var(--yellow); color: var(--yellow); }
+input[type=number] { font: 500 20px var(--mono); width: 7ch; color: var(--yellow); }
+input[type=range] { width: 100%; accent-color: var(--blue); }
+label { font: 13px var(--mono); color: var(--muted); }
+
+/* the 4 x 10 switch / weight grid */
+.grid { display: grid; grid-template-columns: 56px repeat(10, minmax(0, 1fr)); gap: 3px; font: 11px var(--mono); }
+.grid .h { color: var(--muted); text-align: center; align-self: end; padding-bottom: 2px; }
+.grid .rl { color: var(--muted); align-self: center; }
+.cell {
+  aspect-ratio: 1; border: 1px solid var(--line); border-radius: 3px;
+  display: flex; align-items: center; justify-content: center;
+  font: 500 10px var(--mono); color: var(--fg); overflow: hidden; white-space: nowrap;
+  transition: background-color .25s;
+}
+.cell.lit { background: var(--yellow); color: var(--bg); border-color: var(--yellow); }
+.cell.zero { color: #4a505a; }
+.cell.ring { box-shadow: inset 0 0 0 2px var(--yellow); }
+
+.readout { font: 13.5px/1.75 var(--mono); white-space: pre; overflow-x: auto; margin: 0; color: var(--fg); }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; }
+.stat b { display: block; font: 500 22px var(--mono); font-variant-numeric: tabular-nums; }
+.stat span { font: 11px var(--mono); color: var(--muted); letter-spacing: .08em; text-transform: uppercase; }
+
+svg { display: block; width: 100%; height: auto; }
+svg text { fill: var(--muted); font: 11px var(--mono); }
+.axis { stroke: var(--line); }
+.curve { fill: none; stroke: var(--blue); stroke-width: 3; }
+.acc { fill: none; stroke: var(--blue); stroke-width: 2.5; }
+.base { stroke: var(--muted); stroke-dasharray: 4 4; }
+
+table { border-collapse: collapse; width: 100%; font-size: 15px; }
+td, th { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font: 500 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.tablewrap { overflow-x: auto; }
+ol.reading { padding-left: 22px; } ol.reading li { margin-bottom: 12px; max-width: 65ch; }
+footer { border-top: 1px solid var(--line); margin-top: 48px; padding-top: 20px; font: 13px var(--mono); color: var(--muted); }
+
+@media (prefers-reduced-motion: reduce) { .cell { transition: none; } }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.chips button { font-size: 13px; padding: 6px 10px; }
+.corner-btn { font: 500 13px var(--mono); padding: 6px 8px; min-width: 5ch; }
+.corner-btn[aria-pressed=true] { border-color: var(--blue); color: var(--blue); }
+.corner-btn[aria-pressed=false] { border-color: var(--red); color: var(--red); }
+#cube { touch-action: none; cursor: grab; max-width: 460px; margin: 0 auto; }
+#cube:active { cursor: grabbing; }
+.verdict { font: 400 19px/1.45 var(--serif); margin-top: 14px; min-height: 3em; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-top: 14px; }
+tr.sel td { color: var(--yellow); }
+</style>
+
+<main>
+
+<header class="hero">
+  <div class="kicker">experiments-with-ai · 003 · side trip</div>
+  <h1>More inputs, <em>one cut</em></h1>
+  <p class="lede">A neuron draws one straight cut. With two inputs that's a line across a square, and four
+  corners are easy to picture. What happens with three inputs? With <span class="m">n</span>?</p>
+  <p class="lede">Short answer: the cut becomes a flat sheet, then something you can't draw, and it gets
+  <i>much</i> pickier about what it can separate. Drag, click and train below.</p>
+</header>
+
+<section class="chapter" id="square">
+  <div class="num">Chapter 1</div>
+  <h2>The square, in one breath</h2>
+  <p>Two inputs, each 0 or 1, make four possible situations: the corners of a square. Colour each corner
+  “fires” or “doesn't”, and that's one rule. There are <span class="m">2<sup>4</sup> = 16</span> rules. A single
+  line can separate the fires from the doesn'ts in <b>14</b> of them. The two it can't do are XOR (“exactly
+  one”) and its opposite, where the two diagonals share a colour.</p>
+  <p>Now keep the same game and add a third input.</p>
+</section>
+
+<section class="chapter" id="cube">
+  <div class="num">Chapter 2</div>
+  <h2>Three inputs: a cube</h2>
+  <p>Three inputs make eight situations, the corners of a cube. The neuron's score is still a weighted sum
+  <span class="m">w₁x₁ + w₂x₂ + w₃x₃ + b</span>, and “score above 0” is still the rule. But the boundary
+  (score exactly 0) is now a flat <b>plane</b> slicing through the cube. Corners on one side fire; the rest don't.</p>
+
+  <div class="scene">
+    <div class="scene-title">the cube · drag to rotate · click a corner (or a button) to flip it</div>
+    <svg id="cube" viewBox="0 0 400 340" role="img" aria-label="A cube whose eight corners are coloured by whether the neuron should fire"></svg>
+    <div class="sub">corners, written x₁x₂x₃ · <span class="blue">blue = fires</span> · <span class="red">red = doesn't</span></div>
+    <div class="chips" id="corner-btns"></div>
+    <div class="sub">presets</div>
+    <div class="chips" id="presets"></div>
+    <div class="verdict" id="verdict" aria-live="polite"></div>
+    <div class="stats">
+      <div class="stat"><b id="st-w">–</b><span>weights, bias</span></div>
+      <div class="stat"><b id="st-cut">–</b><span>cube edges cut</span></div>
+      <div class="stat"><b id="st-tally">0 / 0</b><span>random rules cuttable</span></div>
+    </div>
+  </div>
+
+  <p>Try <b>AND</b>, <b>OR</b> and <b>majority</b>: each gets a plane, and you can see it clip the cube's
+  edges. Then press <b>Random</b> a dozen times. Of the <span class="m">2<sup>8</sup> = 256</span> possible
+  rules, a plane can do <b>104</b>, about 41%. (I checked: the trainer finds a cut for exactly 104 of the 256.)
+  In 2D it was 14 of 16, nearly 88%. The share is already dropping.</p>
+  <div class="pause">Predict first: which rule would be the hardest one to cut?</div>
+</section>
+
+<section class="chapter" id="parity">
+  <div class="num">Chapter 3</div>
+  <h2>The one that never works: parity</h2>
+  <p>Press <b>parity</b> (fires when an odd number of inputs are on). Every corner now has the opposite
+  colour to all three of its neighbours: all 12 edges are red-meets-blue. A plane would have to cut every
+  single edge. Watch the trainer flail: the best it manages is guessing.</p>
+  <p>You don't need to trust the trainer, though. Fix one input at 0 and look only at the other two: that's
+  the square again, and parity there is XOR. A plane, cut down to a square face, is just a line. No line
+  does XOR, so no plane does parity. The same trick works at <i>any</i> <span class="m">n</span>: fix all
+  but two inputs and you're back at XOR on a square.</p>
+  <p class="muted">Another one worth a click: <b>exactly one</b>. That's part 1's “exactly one” problem, and
+  at 3 inputs it's still out of reach.</p>
+  <div class="lesson">A neuron isn't limited by <i>how many</i> inputs it has. It's limited by the
+  <i>shape</i> of the rule: only “a weighted sum crosses a threshold”.</div>
+</section>
+
+<section class="chapter" id="n">
+  <div class="num">Chapter 4</div>
+  <h2>Now n inputs</h2>
+  <p>The pattern continues: <span class="m">n</span> inputs give <span class="m">2<sup>n</sup></span> corners of
+  a hypercube, the neuron cuts it with a flat <b>hyperplane</b> (a line at <span class="m">n=2</span>, a sheet at
+  <span class="m">n=3</span>, and from <span class="m">n=4</span> up nothing you can draw, but the same
+  weighted sum), and the number of possible rules explodes much faster than the number of
+  cuttable ones.</p>
+
+  <div class="scene">
+    <div class="scene-title">how many rules can one neuron even express?</div>
+    <div class="controls">
+      <label for="n-slider">inputs</label>
+      <input id="n-slider" type="range" min="1" max="8" step="1" value="3">
+      <output id="n-out" for="n-slider">n = 3</output>
+    </div>
+    <div class="stats">
+      <div class="stat"><b id="n-corners">–</b><span>corners</span></div>
+      <div class="stat"><b id="n-total">–</b><span>possible rules</span></div>
+      <div class="stat"><b id="n-cuttable">–</b><span>one cut can do</span></div>
+      <div class="stat"><b id="n-frac">–</b><span>share it can do</span></div>
+    </div>
+    <div class="tablewrap" style="margin-top:14px">
+      <table id="n-table"><thead><tr><th>n</th><th>corners</th><th>rules</th><th>cuttable</th><th>1 in …</th></tr></thead><tbody></tbody></table>
+    </div>
+  </div>
+
+  <p>By <span class="m">n=8</span> a neuron is a tiny sliver of all possible rules: roughly 1 in
+  10<sup>64</sup>. Still, almost no rule you'd ever <i>want</i> is a random one. “Is the number odd?” was
+  one cut because the last digit alone decides it. The real catch is
+  that the cuttable rules are a special family: <b>the answer has to move in one direction as each
+  input increases</b>, weighted. Parity has the opposite shape, since every flip reverses it.</p>
+  <p class="muted">The counts are the known numbers of linearly separable Boolean functions (OEIS A000609). I
+  confirmed n = 2 (14) and n = 3 (104) by brute force in the trainer above.</p>
+</section>
+
+<section class="chapter" id="escape">
+  <div class="num">Chapter 5</div>
+  <h2>Parity at n, and the way out</h2>
+  <p>Same slider as above. Train one neuron on <span class="m">n</span>-bit parity, then give the problem a
+  hidden layer.</p>
+
+  <div class="scene">
+    <div class="scene-title">parity of n bits</div>
+    <div class="row">
+      <button id="btn-one" class="primary">train one neuron</button>
+      <button id="btn-hidden">use n hidden neurons</button>
+    </div>
+    <div class="verdict" id="par-verdict" aria-live="polite">Pick n above, then press a button.</div>
+  </div>
+
+  <p>The hidden layer idea is nicely small. Neuron <span class="m">k</span> asks one plain question:
+  <i>“are at least <span class="m">k</span> inputs on?”</i> (a single cut, so a neuron can do it). Count
+  <span class="m">s</span> = how many inputs are on, and the first <span class="m">s</span> hidden neurons fire. The
+  output neuron adds them with alternating signs: <span class="m">+h₁ − h₂ + h₃ − …</span>. That's
+  1 when <span class="m">s</span> is odd and 0 when it's even. Parity, with <span class="m">n</span> neurons
+  in the middle and nothing learned yet: I just wrote the weights. Training can find
+  solutions like this on its own, which is what the next experiment is for.</p>
+
+  <div class="lesson">One neuron: one cut, fewer and fewer rules as inputs grow. A hidden layer: cuts of
+  cuts, and the parity wall falls.</div>
+</section>
+
+<footer>experiments-with-ai · 003 · side trip · the trainer on this page is the perceptron rule (nudge by
+the mistake), as in part 1, with its own random numbers.</footer>
+</main>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const svgEl = (tag, attrs) => {
+    const e = document.createElementNS('http://www.w3.org/2000/svg', tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  };
+  const signed = (v) => (v < 0 ? '−' : '') + Math.abs(v);
+
+  // ---- shared: corners of the n-cube, and the perceptron rule ------------------------------
+  const corners = (n) => Array.from({ length: 1 << n }, (_, i) => Array.from({ length: n }, (_, k) => (i >> k) & 1));
+  const score = (x, w, b) => x.reduce((a, v, k) => a + v * w[k], b);
+  // "pocket" perceptron: nudge on each mistake; stop when a pass makes none (a cut was found),
+  // otherwise report the best accuracy seen. The starting state (say "no" to all) counts too.
+  function train(P, y, passes) {
+    const n = P[0].length;
+    let w = Array(n).fill(0), b = 0;
+    let best = y.filter((v) => v === 0).length, bestW = [...w], bestB = b;
+    for (let e = 1; e <= passes; e++) {
+      let wrong = 0;
+      P.forEach((x, i) => {
+        const p = score(x, w, b) > 0 ? 1 : 0;
+        if (p !== y[i]) { wrong++; const d = y[i] - p; x.forEach((v, k) => (w[k] += d * v)); b += d; }
+      });
+      if (!wrong) return { ok: true, w, b, passes: e, best: P.length };
+      if (P.length - wrong > best) { best = P.length - wrong; bestW = [...w]; bestB = b; }
+    }
+    return { ok: false, w: bestW, b: bestB, best };
+  }
+
+  // ---- chapter 2/3: the cube ----------------------------------------------------------------
+  const P3 = corners(3);
+  const name = (x) => x.join('');
+  const PRESETS = [
+    ['AND', (x) => (x[0] & x[1] & x[2])],
+    ['OR', (x) => (x[0] | x[1] | x[2])],
+    ['majority', (x) => (x[0] + x[1] + x[2] >= 2 ? 1 : 0)],
+    ['x₁ only', (x) => x[0]],
+    ['exactly one', (x) => (x[0] + x[1] + x[2] === 1 ? 1 : 0)],
+    ['parity', (x) => (x[0] + x[1] + x[2]) % 2],
+  ];
+  let y3 = P3.map(PRESETS[0][1]);
+  let yaw = -0.6, pitch = 0.45, tried = 0, cuttable = 0;
+  let result = train(P3, y3, 2000);
+
+  const EDGES = [];
+  for (let i = 0; i < 8; i++) for (let k = 0; k < 3; k++) if (!((i >> k) & 1)) EDGES.push([i, i | (1 << k)]);
+
+  function project(p) {   // p in [-1,1]^3 -> screen
+    const cy = Math.cos(yaw), sy = Math.sin(yaw), cp = Math.cos(pitch), sp = Math.sin(pitch);
+    const x1 = p[0] * cy + p[2] * sy, z1 = -p[0] * sy + p[2] * cy;
+    const y1 = p[1] * cp - z1 * sp;
+    return [200 + 105 * x1, 170 - 105 * y1];
+  }
+  const to3 = (x) => x.map((v) => 2 * v - 1);
+
+  function planePolygon(w, b) {   // where score = 0 crosses the cube's edges
+    const pts = [];
+    EDGES.forEach(([a, c]) => {
+      const sa = score(P3[a], w, b), sc = score(P3[c], w, b);
+      if ((sa > 0) !== (sc > 0)) {
+        const t = -sa / (sc - sa);
+        pts.push(to3(P3[a].map((v, k) => v + t * (P3[c][k] - v))));
+      }
+    });
+    if (pts.length < 3) return [];
+    const cen = [0, 1, 2].map((k) => pts.reduce((s, p) => s + p[k], 0) / pts.length);
+    const nrm = w, ref = Math.abs(nrm[0]) < 0.9 * Math.hypot(...nrm) ? [1, 0, 0] : [0, 1, 0];
+    const dot = (p, q) => p[0] * q[0] + p[1] * q[1] + p[2] * q[2];
+    const cross = (p, q) => [p[1] * q[2] - p[2] * q[1], p[2] * q[0] - p[0] * q[2], p[0] * q[1] - p[1] * q[0]];
+    const u = cross(nrm, ref), v = cross(nrm, u);
+    return pts
+      .map((p) => { const d = p.map((c, k) => c - cen[k]); return [Math.atan2(dot(d, v), dot(d, u)), p]; })
+      .sort((a, c) => a[0] - c[0]).map((e) => e[1]);
+  }
+
+  function drawCube() {
+    const svg = $('cube');
+    svg.replaceChildren();
+    EDGES.forEach(([a, c]) => {
+      const A = project(to3(P3[a])), C = project(to3(P3[c]));
+      const cut = y3[a] !== y3[c];
+      svg.append(svgEl('line', { x1: A[0], y1: A[1], x2: C[0], y2: C[1], stroke: cut ? '#f4d345' : '#2a2f37', 'stroke-width': cut ? 2.5 : 1.5 }));
+    });
+    if (result.ok) {
+      const poly = planePolygon(result.w, result.b).map(project);
+      if (poly.length) svg.append(svgEl('polygon', { points: poly.map((p) => p.join(',')).join(' '), fill: 'rgba(244,211,69,.22)', stroke: '#f4d345', 'stroke-width': 1.5 }));
+    }
+    P3.forEach((x, i) => {
+      const [px, py] = project(to3(x));
+      svg.append(svgEl('circle', { cx: px, cy: py, r: 11, fill: y3[i] ? '#58c4dd' : '#fc6255', stroke: '#0d0f12', 'stroke-width': 2 }));
+      const t = svgEl('text', { x: px, y: py + 24, 'text-anchor': 'middle' });
+      t.textContent = name(x);
+      svg.append(t);
+    });
+  }
+
+  function refresh() {
+    result = train(P3, y3, 2000);
+    drawCube();
+    document.querySelectorAll('#corner-btns button').forEach((btn, i) => btn.setAttribute('aria-pressed', y3[i] ? 'true' : 'false'));
+    const cutEdges = EDGES.filter(([a, c]) => y3[a] !== y3[c]).length;
+    $('st-cut').textContent = cutEdges + ' / 12';
+    if (result.ok) {
+      $('verdict').innerHTML = '<span class="blue">One plane does it.</span> The trainer found it after ' + result.passes +
+        (result.passes === 1 ? ' pass.' : ' passes.') + ' The yellow sheet is where the score is exactly 0.';
+      $('st-w').textContent = '(' + result.w.map(signed).join(', ') + '), ' + signed(result.b);
+    } else {
+      $('verdict').innerHTML = '<span class="red">No single plane can do this.</span> After 2000 passes the best it managed was ' +
+        result.best + ' of 8 corners right' + (result.best <= 4 ? ' (no better than guessing)' : '') + '.';
+      $('st-w').textContent = '–';
+    }
+  }
+
+  P3.forEach((x, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'corner-btn';
+    btn.textContent = name(x);
+    btn.setAttribute('aria-label', 'corner ' + name(x) + ', flip');
+    btn.onclick = () => { y3[i] ^= 1; refresh(); };
+    $('corner-btns').append(btn);
+  });
+  PRESETS.forEach(([label, f]) => {
+    const btn = document.createElement('button');
+    btn.textContent = label;
+    btn.onclick = () => { y3 = P3.map(f); refresh(); };
+    $('presets').append(btn);
+  });
+  const rnd = document.createElement('button');
+  rnd.textContent = 'Random';
+  rnd.className = 'primary';
+  rnd.onclick = () => {
+    y3 = P3.map(() => (Math.random() < 0.5 ? 1 : 0));
+    refresh();
+    tried++; if (result.ok) cuttable++;
+    $('st-tally').textContent = cuttable + ' / ' + tried;
+  };
+  $('presets').append(rnd);
+
+  // drag to rotate; a press that doesn't move flips the nearest corner
+  (() => {
+    const svg = $('cube');
+    let down = null;
+    svg.addEventListener('pointerdown', (e) => { down = { x: e.clientX, y: e.clientY, moved: 0 }; svg.setPointerCapture(e.pointerId); });
+    svg.addEventListener('pointermove', (e) => {
+      if (!down) return;
+      const dx = e.clientX - down.x, dy = e.clientY - down.y;
+      down.moved += Math.abs(dx) + Math.abs(dy);
+      down.x = e.clientX; down.y = e.clientY;
+      yaw += dx * 0.01; pitch = Math.max(-1.4, Math.min(1.4, pitch + dy * 0.01));
+      drawCube();
+    });
+    svg.addEventListener('pointerup', (e) => {
+      if (down && down.moved < 4) {
+        const r = svg.getBoundingClientRect(), k = 400 / r.width;
+        const mx = (e.clientX - r.left) * k, my = (e.clientY - r.top) * k;
+        let bi = -1, bd = 22;
+        P3.forEach((x, i) => { const [px, py] = project(to3(x)); const d = Math.hypot(px - mx, py - my); if (d < bd) { bd = d; bi = i; } });
+        if (bi >= 0) { y3[bi] ^= 1; refresh(); }
+      }
+      down = null;
+    });
+  })();
+  refresh();
+
+  // ---- chapter 4: the explosion ---------------------------------------------------------------
+  // linearly separable Boolean functions of n variables (OEIS A000609)
+  const SEP = [null, 4, 14, 104, 1882, 94572, 15028134, 8378070864, 17561539552946];
+  const L2 = Math.log10(2);
+  const sci = (lg) => {   // log10 -> "m×10^e"
+    const e = Math.floor(lg), m = Math.pow(10, lg - e);
+    return m.toFixed(1) + '×10' + String(e).split('').map((c) => '⁰¹²³⁴⁵⁶⁷⁸⁹⁻'['0123456789-'.indexOf(c)]).join('');
+  };
+  const num = (v) => (v < 1e6 ? v.toLocaleString() : sci(Math.log10(v)));
+  const info = (n) => {
+    const lgTotal = Math.pow(2, n) * L2, lgSep = Math.log10(SEP[n]);
+    return { lgTotal, lgSep, lgOneIn: lgTotal - lgSep };
+  };
+  const fmtOneIn = (lg) => (lg < 3 ? (Math.pow(10, lg)).toFixed(lg < 1 ? 2 : 1) : sci(lg));
+  const tbody = $('n-table').querySelector('tbody');
+  for (let n = 1; n <= 8; n++) {
+    const { lgTotal, lgOneIn } = info(n);
+    const tr = document.createElement('tr');
+    tr.innerHTML = '<td>' + n + '</td><td>' + (1 << n) + '</td><td>' + (lgTotal < 6 ? Math.round(Math.pow(10, lgTotal)).toLocaleString() : sci(lgTotal)) +
+      '</td><td>' + num(SEP[n]) + '</td><td>' + fmtOneIn(lgOneIn) + '</td>';
+    tbody.append(tr);
+  }
+  let n = 3;
+  function showN() {
+    const { lgTotal, lgSep, lgOneIn } = info(n);
+    $('n-out').textContent = 'n = ' + n;
+    $('n-corners').textContent = 1 << n;
+    $('n-total').textContent = lgTotal < 6 ? Math.round(Math.pow(10, lgTotal)).toLocaleString() : sci(lgTotal);
+    $('n-cuttable').textContent = num(SEP[n]);
+    $('n-frac').textContent = '1 in ' + fmtOneIn(lgOneIn);
+    [...tbody.rows].forEach((r, i) => r.classList.toggle('sel', i + 1 === n));
+    $('par-verdict').textContent = 'n = ' + n + ': ' + (1 << n) + ' corners. Press a button.';
+  }
+  $('n-slider').oninput = (e) => { n = Number(e.target.value); showN(); };
+  showN();
+
+  // ---- chapter 5: parity at n -----------------------------------------------------------------
+  const parity = (x) => x.reduce((a, v) => a + v, 0) % 2;
+  $('btn-one').onclick = () => {
+    const P = corners(n), y = P.map(parity);
+    const r = train(P, y, 500);
+    $('par-verdict').innerHTML = n === 1
+      ? '<span class="blue">n = 1:</span> parity of one bit is just the bit. One cut, 100%. Try n ≥ 2.'
+      : 'One neuron, 500 passes over all ' + P.length + ' corners. Best it managed: <span class="red">' + r.best + ' of ' + P.length +
+        ' (' + Math.round((100 * r.best) / P.length) + '%)</span>. Always saying “no” already gets 50%.';
+  };
+  $('btn-hidden').onclick = () => {
+    const P = corners(n), y = P.map(parity);
+    let right = 0;
+    P.forEach((x, i) => {
+      const s = x.reduce((a, v) => a + v, 0);
+      const h = Array.from({ length: n }, (_, k) => (s >= k + 1 ? 1 : 0));          // "at least k+1 inputs on?"
+      const out = h.reduce((a, v, k) => a + (k % 2 ? -v : v), -0.5) > 0 ? 1 : 0;   // +h1 −h2 +h3 …
+      if (out === y[i]) right++;
+    });
+    $('par-verdict').innerHTML = n + ' hidden neurons plus one output: <span class="blue">' + right + ' of ' + P.length +
+      ' (' + Math.round((100 * right) / P.length) + '%)</span>, with weights I wrote by hand.';
+  };
+})();
+</script>
