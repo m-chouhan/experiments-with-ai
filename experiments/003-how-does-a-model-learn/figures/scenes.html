@@ -1,0 +1,296 @@
+<!doctype html>
+<!-- The GIFs in ../images, drawn with my-portfolio/tools/sketch-gifs. From that folder:
+       python3 <this folder>/export_training.py <this folder>/training.json   # the training GIF's numbers, from playground.py's run
+       node capture.mjs <this folder>/scenes.html <this folder>/../images     # or name scenes: ... learning run -->
+<html><head><meta charset="utf-8">
+<script src="/lib/rough.js"></script>
+<script src="/lib/sketch.js"></script>
+<link rel="stylesheet" href="/lib/sketch.css">
+</head>
+<body><div id="stage"></div>
+<script>
+// ---- A: the two questions, one loop --------------------------------------------------------
+function sceneLearning() {
+  const rows = [
+    { y: 140, tag: 'THIS POST', steps: [['4817', 'even', 'odd'], ['2934', 'odd', 'even'], ['1206', 'odd', 'even'], ['7731', 'odd', 'odd'], ['5528', 'even', 'even'], ['3093', 'odd', 'odd']] },
+    { y: 290, tag: "WHERE WE'RE HEADED", steps: [['hear me spea', 'q', 'k'], ['the kin', 'e', 'g'], ['to be or no', 'w', 't'], ['my lor', 'd', 'd'], ['good morro', 'w', 'w'], ['fare the', 'e', 'e']] },
+  ];
+  const bars0 = [[3, 5, 2, 6, 4, 3, 5, 2], [4, 2, 5, 3, 6, 2, 4, 5]];
+  const frames = [];
+  const bars = bars0.map((b) => b.slice());
+  rows[0].steps.forEach((_, s) => {
+    for (const phase of ['in', 'guess', 'nudge']) {
+      const wrong = rows.map((r) => r.steps[s][1] !== r.steps[s][2]);
+      if (phase === 'nudge' && !wrong.some(Boolean)) continue;
+      if (phase === 'nudge') bars.forEach((b, r) => { if (wrong[r]) b.forEach((_, i) => { b[i] = Math.max(1, Math.min(7, b[i] + ((i * 3 + s + r) % 3) - 1)); }); });
+      frames.push({ ms: phase === 'in' ? 500 : phase === 'guess' ? 1100 : 900, s, phase, wrong, bars: bars.map((b) => b.slice()) });
+    }
+  });
+  frames.push({ ...frames[frames.length - 1], ms: 1800 });
+  const draw = (f) => {
+    let body = '';
+    rows.forEach((r, ri) => {
+      const [input, guess, answer] = r.steps[f.s];
+      const wrong = f.wrong[ri], y = r.y;
+      body += t(28, y - 52, r.tag, `class="mono" font-size="11" letter-spacing="2" fill="${C.muted}"`);
+      body += `<rect x="28" y="${y - 30}" width="190" height="60" rx="8" fill="${C.panel}" stroke="${C.line}"/>`;
+      body += t(123, y + 7, input, `text-anchor="middle" class="mono" font-size="${input.length > 6 ? 18 : 24}" fill="${C.blue}"`);
+      body += `<path d="M226 ${y} H286" stroke="${C.muted}" stroke-width="2"/><path d="M286 ${y - 6} L296 ${y} L286 ${y + 6}" fill="${C.muted}"/>`;
+      const nudging = f.phase === 'nudge' && wrong;
+      body += `<rect x="304" y="${y - 50}" width="190" height="100" rx="10" fill="${C.panel}" stroke="${nudging ? C.yellow : C.cell}" stroke-width="${nudging ? 2.5 : 1.5}"/>`;
+      body += t(399, y - 30, 'model · weights', `text-anchor="middle" font-size="12" fill="${C.muted}"`);
+      f.bars[ri].forEach((h, i) => { body += `<rect x="${324 + i * 20}" y="${y + 36 - h * 8}" width="12" height="${h * 8}" rx="2" fill="${nudging ? C.yellow : C.cell}"/>`; });
+      body += `<path d="M502 ${y} H562" stroke="${C.muted}" stroke-width="2"/><path d="M562 ${y - 6} L572 ${y} L562 ${y + 6}" fill="${C.muted}"/>`;
+      if (f.phase !== 'in') {
+        body += t(584, y - 4, `guess: <tspan font-weight="600" fill="${wrong ? C.red : C.green}">${guess}</tspan>  ${wrong ? '✗' : '✓'}`, `class="mono" font-size="18" fill="${C.fg}"`);
+        body += t(584, y + 22, `answer: ${answer}`, `class="mono" font-size="14" fill="${C.muted}"`);
+      }
+      if (nudging) body += t(399, y + 72, 'wrong → nudge the weights', `text-anchor="middle" font-size="14" fill="${C.yellow}"`);
+    });
+    body += t(400, 400, 'show an example · check the guess · nudge the numbers when it is wrong · repeat', `text-anchor="middle" font-size="14" fill="${C.muted}"`);
+    return svg('Teaching a model: one loop, two problems', body);
+  };
+  return { frames, draw };
+}
+
+// ---- B: the run neuron -----------------------------------------------------------------------
+function sceneRun() {
+  const base = { on0: 1, on1: 0, on2: 1, w0: 2, w1: 1.5, w2: -3, thr: 1, note: 'sunny and tired: the total is below the threshold' };
+  const frames = [];
+  const hold = (s, ms) => frames.push({ ...s, ms });
+  const move = (from, to, n = 8) => tween(from, to, n).forEach((s) => frames.push({ ...s, ms: 70 }));
+  hold(base, 2400);
+  const friend = { ...base, on1: 1, note: 'a friend comes along: closer, but still not enough' };
+  hold(friend, 2400);
+  const rested = { ...base, on2: 0, note: 'stop being tired: over the line' };
+  hold(rested, 2400);
+  hold({ ...base, note: 'back to sunny and tired…' }, 1000);
+  const sunny = { ...base, w0: 4.5, note: 'or make "sunny" count for more' };
+  move({ ...base }, sunny); hold(sunny, 2000);
+  move(sunny, { ...base, note: 'back to sunny and tired…' }, 6); hold({ ...base, note: 'back to sunny and tired…' }, 700);
+  const low = { ...base, thr: -2, note: 'or lower the threshold' };
+  move({ ...base }, low); hold(low, 2000);
+  move(low, { ...base, note: 'the code never changed. only the numbers did.' }, 6); hold({ ...base, note: 'the code never changed. only the numbers did.' }, 2200);
+  const labels = ["it's sunny", 'a friend is coming', "I'm tired"];
+  const draw = (f) => {
+    const on = [f.on0, f.on1, f.on2], w = [f.w0, f.w1, f.w2];
+    const total = on.reduce((a, o, i) => a + o * w[i], 0);
+    const run = total > f.thr + 1e-9;
+    let body = '';
+    body += t(40, 82, 'input', `font-size="12" fill="${C.muted}"`) + t(250, 82, 'on?', `font-size="12" fill="${C.muted}"`) + t(330, 82, 'weight', `font-size="12" fill="${C.muted}"`) + t(420, 82, 'adds', `font-size="12" fill="${C.muted}"`);
+    labels.forEach((l, i) => {
+      const y = 120 + i * 52;
+      body += t(40, y, l, `font-size="17" fill="${on[i] ? C.fg : C.muted}"`);
+      body += `<rect x="244" y="${y - 17}" width="40" height="22" rx="11" fill="${on[i] ? C.blue : C.line}"/><circle cx="${on[i] ? 273 : 255}" cy="${y - 6}" r="8" fill="${C.fg}"/>`;
+      body += t(330, y, fmt(w[i]), `class="mono" font-size="18" fill="${C.yellow}"`);
+      body += t(420, y, on[i] ? fmt(on[i] * w[i]) : '0', `class="mono" font-size="18" fill="${on[i] ? C.fg : C.muted}"`);
+    });
+    body += `<path d="M40 268 H470" stroke="${C.line}"/>`;
+    body += t(330, 298, 'total', `font-size="15" fill="${C.green}"`) + t(420, 298, fmt(total) || '0', `class="mono" font-size="20" font-weight="600" fill="${C.green}"`);
+    // number line
+    const X = (v) => 520 + (v + 4) * 30, y = 150;
+    body += `<rect x="${X(f.thr)}" y="${y - 40}" width="${X(5) - X(f.thr)}" height="80" fill="${C.green}" opacity="0.10"/>`;
+    body += `<path d="M${X(-4)} ${y} H${X(5)}" stroke="${C.muted}"/>`;
+    for (let v = -4; v <= 5; v++) body += `<path d="M${X(v)} ${y - 4} V${y + 4}" stroke="${C.muted}"/>` + t(X(v), y + 22, v, `text-anchor="middle" class="mono" font-size="11" fill="${C.muted}"`);
+    body += `<path d="M${X(f.thr)} ${y - 46} V${y + 40}" stroke="${C.yellow}" stroke-width="2" stroke-dasharray="5 4"/>` + t(X(f.thr), y - 54, `threshold ${fmt(f.thr) || 0}`, `text-anchor="middle" font-size="13" fill="${C.yellow}"`);
+    body += t(X(4.4), y - 24, 'fire', `text-anchor="middle" font-size="12" fill="${C.green}"`);
+    body += `<circle cx="${X(total)}" cy="${y}" r="10" fill="${run ? C.green : C.red}"/>`;
+    body += t(640, 270, run ? 'GO FOR A RUN' : 'STAY IN', `text-anchor="middle" font-size="30" font-weight="600" fill="${run ? C.green : C.red}"`);
+    body += t(640, 300, `total ${fmt(total) || 0} ${run ? '>' : '≤'} threshold ${fmt(f.thr) || 0}`, `text-anchor="middle" class="mono" font-size="13" fill="${C.muted}"`);
+    body += t(400, 380, f.note, `text-anchor="middle" font-size="17" fill="${C.fg}"`);
+    return svg('One neuron, one decision: should I go for a run?', body);
+  };
+  return { frames, draw };
+}
+
+// ---- C: the four corners ---------------------------------------------------------------------
+function halfPlane(w1, w2, b, box) {
+  // the part of box (polygon) where w1*x + w2*y + b > 0
+  const f = ([x, y]) => w1 * x + w2 * y + b, out = [];
+  box.forEach((p, i) => {
+    const q = box[(i + 1) % box.length], fp = f(p), fq = f(q);
+    if (fp > 0) out.push(p);
+    if ((fp > 0) !== (fq > 0)) { const k = fp / (fp - fq); out.push([p[0] + (q[0] - p[0]) * k, p[1] + (q[1] - p[1]) * k]); }
+  });
+  return out;
+}
+function sceneCorners() {
+  const rules = {
+    both: (a, b) => a && b, either: (a, b) => a || b, 'exactly one': (a, b) => a !== b,
+  };
+  const frames = [];
+  const hold = (s, ms) => frames.push({ ...s, ms });
+  const move = (from, to, n = 10) => tween(from, to, n).forEach((s) => frames.push({ ...s, ms: 60 }));
+  let s = { rule: 'both', w1: 1, w2: 1, b: 0.5, note: 'teach it "both": run only when sunny AND a friend is coming' };
+  hold(s, 1600);
+  let n = { ...s, b: -1.5, note: 'weights 1 and 1, bias −1.5: all four right' }; move(s, n); hold(n, 1800); s = n;
+  n = { ...s, rule: 'either', note: 'now "either": same weights…' }; hold(n, 1300); s = n;
+  n = { ...s, b: -0.5, note: '…bias −0.5: all four right again' }; move(s, n); hold(n, 1800); s = n;
+  n = { ...s, rule: 'exactly one', note: 'now "exactly one". one straight cut…' }; hold(n, 1500); s = n;
+  const tries = [{ w1: 1, w2: -1, b: -0.3 }, { w1: -1, w2: 1, b: -0.3 }, { w1: -1, w2: -1, b: 1.5 }, { w1: 1, w2: 1, b: -0.5 }];
+  for (const tr of tries) { n = { ...s, ...tr, note: 'every straight line gets at least one corner wrong' }; move(s, n, 12); hold(n, 900); s = n; }
+  hold({ ...s, note: 'the run corners sit on opposite diagonals. no single line splits them.' }, 2600);
+  const corners = [[0, 0], [0, 1], [1, 0], [1, 1]];
+  const draw = (f) => {
+    const X = (x) => 130 + x * 170, Y = (y) => 300 - y * 170;
+    const box = [[-0.35, -0.35], [1.35, -0.35], [1.35, 1.35], [-0.35, 1.35]];
+    let body = `<rect x="${X(-0.35)}" y="${Y(1.35)}" width="${X(1.35) - X(-0.35)}" height="${Y(-0.35) - Y(1.35)}" fill="${C.panel}" stroke="${C.line}"/>`;
+    const hp = halfPlane(f.w1, f.w2, f.b, box);
+    if (hp.length > 2) body += `<polygon points="${hp.map(([x, y]) => `${X(x)},${Y(y)}`).join(' ')}" fill="${C.green}" opacity="0.13"/>`;
+    // the cut: w1 x + w2 y + b = 0, clipped to the box
+    const edge = [];
+    box.forEach((p, i) => {
+      const q = box[(i + 1) % 4], fp = f.w1 * p[0] + f.w2 * p[1] + f.b, fq = f.w1 * q[0] + f.w2 * q[1] + f.b;
+      if ((fp > 0) !== (fq > 0)) { const k = fp / (fp - fq); edge.push([p[0] + (q[0] - p[0]) * k, p[1] + (q[1] - p[1]) * k]); }
+    });
+    if (edge.length === 2) body += `<path d="M${X(edge[0][0])} ${Y(edge[0][1])} L${X(edge[1][0])} ${Y(edge[1][1])}" stroke="${C.yellow}" stroke-width="2.5"/>`;
+    let right = 0;
+    corners.forEach(([a, b]) => {
+      const want = rules[f.rule](a, b), says = f.w1 * a + f.w2 * b + f.b > 0, ok = want === says;
+      right += ok;
+      body += `<circle cx="${X(a)}" cy="${Y(b)}" r="17" fill="${want ? C.green : C.bg}" stroke="${want ? C.green : C.muted}" stroke-width="2"/>`;
+      body += t(X(a), Y(b) + 5, want ? 'run' : 'stay', `text-anchor="middle" font-size="11" font-weight="600" fill="${want ? C.bg : C.muted}"`);
+      body += t(X(a) + (a ? 28 : -28), Y(b) - 14, ok ? '✓' : '✗', `text-anchor="middle" font-size="18" font-weight="600" fill="${ok ? C.green : C.red}"`);
+    });
+    body += t(X(0.5), Y(-0.35) + 24, 'sunny →', `text-anchor="middle" font-size="13" fill="${C.muted}"`);
+    body += t(X(-0.35) - 12, Y(0.5), 'friend →', `text-anchor="middle" font-size="13" fill="${C.muted}" transform="rotate(-90 ${X(-0.35) - 12} ${Y(0.5)})"`);
+    // right panel
+    const px = 520;
+    ['both', 'either', 'exactly one'].forEach((r, i) => {
+      const active = r === f.rule, x = px + [0, 72, 150][i];
+      body += `<rect x="${x}" y="72" width="${[62, 68, 104][i]}" height="30" rx="15" fill="${active ? C.blue : 'none'}" stroke="${active ? C.blue : C.line}"/>`;
+      body += t(x + [62, 68, 104][i] / 2, 92, r, `text-anchor="middle" font-size="14" font-weight="600" fill="${active ? C.bg : C.muted}"`);
+    });
+    [['weight · sunny', f.w1], ['weight · friend', f.w2], ['bias', f.b]].forEach(([l, v], i) => {
+      body += t(px, 150 + i * 38, l, `font-size="15" fill="${C.muted}"`) + t(px + 200, 150 + i * 38, fmt(v) || '0', `text-anchor="end" class="mono" font-size="18" fill="${C.yellow}"`);
+    });
+    body += t(px, 290, `${right} / 4 right`, `font-size="28" font-weight="600" fill="${right === 4 ? C.green : C.red}"`);
+    body += t(px, 316, 'green side of the line = "run"', `font-size="13" fill="${C.muted}"`);
+    body += t(400, 400, f.note, `text-anchor="middle" font-size="16" fill="${C.fg}"`);
+    return svg('Teach one neuron by hand: move the numbers', body);
+  };
+  return { frames, draw };
+}
+
+// ---- D: one straight line vs odd/even ----------------------------------------------------------
+function sceneLine() {
+  const frames = [];
+  const hold = (s, ms) => frames.push({ ...s, ms });
+  const move = (from, to, n = 12) => tween(from, to, n).forEach((s) => frames.push({ ...s, ms: 60 }));
+  // total = w * (number - c): the line crosses zero once, at c
+  let s = { w: 0.12, c: 10.5, note: 'one input, the number: its total is a straight line' };
+  hold(s, 1800);
+  const tries = [{ w: 0.12, c: 4.5 }, { w: 0.12, c: 16.5 }, { w: -0.12, c: 12.5 }, { w: 0.12, c: 0.5 }, { w: -0.12, c: 1.5 }];
+  for (const tr of tries) { const n = { ...s, ...tr, note: 'tilt it, slide it: above zero says "odd"' }; move(s, n); hold(n, 800); s = n; }
+  hold({ ...s, note: 'the best any line can do: 11 out of 20' }, 2000);
+  hold({ ...s, note: 'the answers flip on every step. a line flips once.' }, 2400);
+  const draw = (f) => {
+    const X = (n) => 40 + (n - 0.5) * 36, Y = (v) => 210 - v * 40;
+    let body = `<path d="M${X(0.5)} ${Y(0)} H${X(20.5)}" stroke="${C.muted}"/>`;
+    body += t(X(20.5) + 6, Y(0) + 4, '0', `class="mono" font-size="12" fill="${C.muted}"`);
+    body += t(X(0.5), Y(2.7), 'says odd ↑', `font-size="13" fill="${C.green}"`) + t(X(0.5), Y(-2.5) + 10, 'says even ↓', `font-size="13" fill="${C.muted}"`);
+    const v0 = f.w * (0.5 - f.c), v1 = f.w * (20.5 - f.c), clip = (v) => Math.max(-2.8, Math.min(2.8, v));
+    body += `<clipPath id="cl"><rect x="0" y="${Y(2.8)}" width="800" height="${Y(-2.8) - Y(2.8)}"/></clipPath>`;
+    body += `<path clip-path="url(#cl)" d="M${X(0.5)} ${Y(v0)} L${X(20.5)} ${Y(v1)}" stroke="${C.yellow}" stroke-width="3"/>`;
+    let right = 0;
+    for (let n = 1; n <= 20; n++) {
+      const odd = n % 2 === 1, says = f.w * (n - f.c) > 0, ok = odd === says;
+      right += ok;
+      body += `<circle cx="${X(n)}" cy="${Y(clip(f.w * (n - f.c)))}" r="4" fill="${C.yellow}"/>`;
+      body += `<rect x="${X(n) - 14}" y="${Y(-3.3)}" width="28" height="26" rx="5" fill="${ok ? C.green : C.red}" opacity="${ok ? 0.85 : 0.75}"/>`;
+      body += t(X(n), Y(-3.3) + 18, n, `text-anchor="middle" class="mono" font-size="13" font-weight="600" fill="${C.bg}"`);
+      body += t(X(n), Y(-3.3) + 44, odd ? 'odd' : 'even', `text-anchor="middle" font-size="10" fill="${C.muted}"`);
+    }
+    body += t(772, 36, `${right} / 20 right`, `text-anchor="end" font-size="22" font-weight="600" fill="${right >= 11 ? C.yellow : C.red}"`);
+    body += t(400, 408, f.note, `text-anchor="middle" font-size="16" fill="${C.fg}"`);
+    return svg('One input: the number itself', body);
+  };
+  return { frames, draw };
+}
+
+// ---- E: ten switches, ten sliders ---------------------------------------------------------------
+function sceneSliders() {
+  const numbers = [4817, 3302, 9125, 640, 7788, 1203, 5559, 2246, 8011, 6374, 4815, 9930, 1467, 3008, 7252, 5121, 2689, 6443, 8576, 1999];
+  const frames = [];
+  let s = {}; for (let d = 0; d < 10; d++) s['w' + d] = 0;
+  s.note = 'ten switches, one weight each. all start at 0, so everything says "even"';
+  frames.push({ ...s, hi: -1, ms: 2200 });
+  const order = [7, 2, 1, 4, 9, 0, 3, 8, 5, 6];
+  for (const d of order) {
+    const n = { ...s, ['w' + d]: d % 2 ? 1 : -1, note: d % 2 ? `odd digit ${d}: push it up` : `even digit ${d}: push it down` };
+    tween(s, n, 5).forEach((x) => frames.push({ ...x, hi: d, ms: 55 }));
+    frames.push({ ...n, hi: d, ms: 520 });
+    s = n;
+  }
+  frames.push({ ...s, hi: -1, note: '20 out of 20. and every other number ends in one of these ten digits too', ms: 3000 });
+  const draw = (f) => {
+    let body = '';
+    const sx = (d) => 70 + d * 68, top = 100, mid = 168, h = 52;
+    for (let d = 0; d < 10; d++) {
+      const v = f['w' + d], hi = f.hi === d;
+      body += `<path d="M${sx(d)} ${mid - h} V${mid + h}" stroke="${hi ? C.blue : C.line}" stroke-width="4" stroke-linecap="round"/>`;
+      body += `<path d="M${sx(d)} ${mid} V${mid - v * h}" stroke="${v > 0 ? C.green : C.red}" stroke-width="4"/>`;
+      body += `<circle cx="${sx(d)}" cy="${mid - v * h}" r="9" fill="${C.yellow}"/>`;
+      body += t(sx(d), mid + h + 34, d, `text-anchor="middle" class="mono" font-size="18" font-weight="600" fill="${hi ? C.blue : C.fg}"`);
+      body += t(sx(d), top - 14 + 4, fmt(v) || '0', `text-anchor="middle" class="mono" font-size="12" fill="${C.yellow}"`);
+    }
+    body += t(sx(9) + 38, mid - h + 6, '+1', `class="mono" font-size="11" fill="${C.muted}"`) + t(sx(9) + 38, mid + 4, '0', `class="mono" font-size="11" fill="${C.muted}"`) + t(sx(9) + 38, mid + h + 4, '−1', `class="mono" font-size="11" fill="${C.muted}"`);
+    body += t(28, 270, 'last digit →', `class="mono" font-size="11" letter-spacing="2" fill="${C.muted}"`);
+    let right = 0;
+    numbers.forEach((n, i) => {
+      const d = n % 10, says = f['w' + d] > 0, ok = says === (d % 2 === 1);
+      right += ok;
+      const x = 34 + (i % 10) * 76, y = 284 + 8 + Math.floor(i / 10) * 40;
+      body += `<rect x="${x}" y="${y}" width="66" height="30" rx="6" fill="${ok ? C.green : C.red}" opacity="${ok ? 0.85 : 0.75}" stroke="${f.hi === d ? C.blue : 'none'}" stroke-width="3"/>`;
+      body += t(x + 33, y + 20, n, `text-anchor="middle" class="mono" font-size="14" font-weight="600" fill="${C.bg}"`);
+    });
+    body += t(772, 36, `${right} / 20 right`, `text-anchor="end" font-size="22" font-weight="600" fill="${right === 20 ? C.green : C.yellow}"`);
+    body += t(400, 400, f.note, `text-anchor="middle" font-size="15" fill="${C.fg}"`);
+    return svg('A number as ten switches: one weight per last digit', body);
+  };
+  return { frames, draw };
+}
+
+// ---- F: the training loop, from playground.py --------------------------------------------------
+function sceneTraining(snaps) {
+  const frames = [];
+  const zero = { weights: Array(40).fill(0), bias: 0, accuracy: 0.5, seen: 0 };
+  frames.push({ cur: zero, ex: null, mistakes: 0, ms: 1600, note: '40 switches (4 digits × 10 values), every weight starts at 0' });
+  let prev = zero;
+  snaps.forEach((sn, i) => {
+    const fast = i > 8;
+    frames.push({ cur: prev, ex: sn, phase: 'wrong', mistakes: i, ms: fast ? 260 : 750, note: `example ${sn.seen}: ${String(sn.number).padStart(4, '0')} → guessed ${sn.total > 0 ? 'odd' : 'even'} ✗` });
+    frames.push({ cur: sn, ex: sn, phase: 'nudge', mistakes: i + 1, ms: fast ? 320 : 900, note: `nudge its 4 switches ${sn.nudge > 0 ? '+1' : '−1'} (and the bias)` });
+    prev = sn;
+  });
+  frames.push({ cur: prev, ex: null, mistakes: snaps.length, ms: 3500, note: 'after 2,000 examples: 30 mistakes, and the last row is stripes. it learned n % 2' });
+  const draw = (f) => {
+    let body = '';
+    const cx = (v) => 130 + v * 46, cy = (p) => 88 + p * 50;
+    for (let v = 0; v < 10; v++) body += t(cx(v) + 20, 78, v, `text-anchor="middle" class="mono" font-size="13" fill="${C.muted}"`);
+    const digits = f.ex ? String(f.ex.number).padStart(4, '0') : null;
+    for (let p = 0; p < 4; p++) {
+      body += t(118, cy(p) + 30, `digit ${p + 1}`, `text-anchor="end" font-size="14" fill="${C.muted}"`);
+      for (let v = 0; v < 10; v++) {
+        const w = f.cur.weights[p * 10 + v], a = Math.min(1, Math.abs(w) / 4);
+        const on = digits && +digits[p] === v;
+        body += `<rect x="${cx(v)}" y="${cy(p) + 4}" width="40" height="42" rx="5" data-fill="${w > 0 ? ['#d0ebff', '#a5d8ff', '#74c0fc', '#4dabf7'][Math.min(3, w - 1)] : w < 0 ? ['#ffe3e3', '#ffc9c9', '#ffa8a8', '#ff8787'][Math.min(3, -w - 1)] : '#ffffff'}" fill="${C.panel}" stroke="${on ? (f.phase === 'nudge' ? C.yellow : C.red) : C.line}" stroke-width="${on ? 3 : 1}"/>`;
+        body += t(cx(v) + 20, cy(p) + 31, w ? fmt(w) : '0', `text-anchor="middle" class="mono" font-size="14" font-weight="600" fill="${w ? C.fg : C.muted}"`);
+      }
+    }
+    body += t(130, 312, `bias ${fmt(f.cur.bias) || '0'}`, `class="mono" font-size="14" fill="${C.muted}"`);
+    body += t(690, 120, 'mistakes', `text-anchor="middle" font-size="13" fill="${C.muted}"`) + t(690, 152, f.mistakes, `text-anchor="middle" class="mono" font-size="28" font-weight="600" fill="${C.red}"`);
+    body += t(690, 200, 'right on all 10,000', `text-anchor="middle" font-size="13" fill="${C.muted}"`) + t(690, 234, `${(f.cur.accuracy * 100).toFixed(1)}%`, `text-anchor="middle" class="mono" font-size="28" font-weight="600" fill="${C.green}"`);
+    body += `<rect x="640" y="248" width="100" height="8" rx="4" fill="${C.line}"/><rect x="640" y="248" width="${f.cur.accuracy * 100}" height="8" rx="4" fill="${C.green}"/>`;
+    body += t(400, 372, f.note, `text-anchor="middle" font-size="16" fill="${f.phase === 'nudge' ? C.yellow : C.fg}"`);
+    body += t(400, 400, 'blue = evidence for odd · red = evidence for even', `text-anchor="middle" font-size="13" fill="${C.muted}"`);
+    return svg('The loop does the teaching: nudge only on mistakes', body);
+  };
+  return { frames, draw };
+}
+
+window.SCENES = {
+  learning: sceneLearning, run: sceneRun, corners: sceneCorners, line: sceneLine, sliders: sceneSliders,
+  training: async () => sceneTraining(await (await fetch('training.json')).json()),
+};
+</script></body></html>

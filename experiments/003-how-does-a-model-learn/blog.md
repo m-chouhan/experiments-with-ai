@@ -228,7 +228,7 @@ You haven't stopped giving the machine instructions. You've moved up one level. 
 
 ## Play with it
 
-Everything above is in one file, [`playground.py`](https://github.com/m-chouhan/experiments-with-ai/blob/main/experiments/003-teaching-a-net-tic-tac-toe/playground.py). No libraries, just `python3 playground.py`. The knobs are at the top:
+Everything above is in one file, [`playground.py`](https://github.com/m-chouhan/experiments-with-ai/blob/main/experiments/003-how-does-a-model-learn/playground.py). No libraries, just `python3 playground.py`. The knobs are at the top:
 
 - Set `INPUTS = 'number'` and watch it get stuck at 50%. Then try `'last digit'`, then `'all digits'`.
 - Swap the `rule` for "divisible by 3" and watch one neuron fail. (Why? "Exactly one" again.)
@@ -258,4 +258,4 @@ If something here didn't click, or you know a better way to explain it, tell me 
 
 ---
 
-*Code for this post:* [github.com/m-chouhan/experiments-with-ai](https://github.com/m-chouhan/experiments-with-ai/tree/main/experiments/003-teaching-a-net-tic-tac-toe)
+*Code for this post:* [github.com/m-chouhan/experiments-with-ai](https://github.com/m-chouhan/experiments-with-ai/tree/main/experiments/003-how-does-a-model-learn)

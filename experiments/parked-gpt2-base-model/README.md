@@ -1,7 +1,6 @@
-# 004 — Running a base model locally
+# Running a base model locally
 
-> **Status: parked.** The scripts below work, but I'm coming back to this after experiment 003
-> (a neural net learning tic-tac-toe). It was renumbered from 003 to make room.
+> **Status: parked.** The scripts below work. It gets a number when a blog post picks it up.
 
 What is a language model, really? This runs GPT-2, a raw *base* model, on a laptop so you can
 see it: no login, no API key, no chat.

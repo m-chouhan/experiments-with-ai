@@ -1,4 +1,4 @@
-# 003 · Learnings and learner questions
+# 004 · Learnings and learner questions
 
 Questions I actually had while going through this, with the answers. These are the
 confusions a real learner hits, so the final blog should answer each one *at the moment the

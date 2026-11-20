@@ -1,7 +1,7 @@
-# 003 · Teach a machine to find even and odd numbers
+# 004 · Teach a machine to find even and odd numbers, with gradient descent
 
-> This is a version of [README.md](README.md) in ASD-STE100 Simplified Technical English.
-> The content is the same. The sentences are short, and each sentence has one idea.
+> [003](../003-how-does-a-model-learn/) teaches the same problem with a simpler rule: change the
+> weights only after an error. This folder adds a sigmoid and changes the weights after each example.
 
 ## 1. Purpose
 
@@ -44,7 +44,7 @@ libraries. Each step of the loop is in the location where it occurs.
 
 There are also two interactive explainers. Open them in a web browser:
 
-1. [`explainer-1-how-a-neuron-learns.html`](explainer-1-how-a-neuron-learns.html) shows the
+1. [`explainer-1-how-a-neuron-learns.html`](../003-how-does-a-model-learn/explainer-1-how-a-neuron-learns.html) (in 003) shows the
    basic idea. It does not use the code from this folder. A neuron is a weighted vote. It draws
    one straight line between two groups. With the correct inputs, one line can divide odd numbers
    from even numbers. A loop that corrects its errors finds the weights.
@@ -412,5 +412,6 @@ grade.py        accuracy and average miss: these show the improvement
 nudge.py        gradient descent, one example at a time
 train.py        the data, the loop, the table of weights; run this file
 LEARNINGS.md    my questions about this subject, with answers (notes for the blog)
-README-STE.md   this file: README.md in Simplified Technical English
+README.md       this file
+explainer-2-even-or-odd-learned.html   the code in this folder, as an interactive explainer
 ```
