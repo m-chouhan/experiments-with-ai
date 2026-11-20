@@ -54,11 +54,11 @@ This became the basis of the neuro + mathematical + computing model of artificia
 
 As software engineers, we're used to giving instructions to a machine. This equation reverses that paradigm.
 
-Look at that function again. Where do you think the logic (the instructions, the information) of the program lives?  
-Let's try to run through a simple example to build the mental model, which will help us arrive at the key insight.
+Look at that function again. Where do you think the logic (the instructions, the information) of the program lives?
+Let's run through a simple example to build the mental model, which will help us arrive at the key insight.
 
-Say we want to build a neuron that outputs a signal of whether I go out for a run or not. Signal on → we go for a run, signal off → we stay put.  
-Now what could the input signals for this be?
+Say we want to build a neuron that outputs a signal for whether I go out for a run or not.
+Signal on → we go for a run, signal off → we stay put. Now what could the input signals for this be?
 
 Let's say we have 2 signals.
 
@@ -74,9 +74,9 @@ Now let's try to answer whether I go for a run or not using this. (Try to do the
 <!-- interactive: readers flip the run neuron's inputs and drag its weights and threshold, and watch the total and the decision change -->
 ![The run neuron: flipping inputs and moving a weight or the threshold changes the total and the decision](images/run.gif)
 
-Answer: it's all in the **weights and the bias**.
+So, where does the logic live? It's all in the **weights and the bias**.
 
-The structure is the same for every neuron that ever existed. But the knowledge lives entirely in its weights and bias.
+*The structure is the same for every neuron that ever existed. But the knowledge lives entirely in its weights and bias.*
 
 ### The weights are the program!
 
