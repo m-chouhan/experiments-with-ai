@@ -1,0 +1,704 @@
+<title>How a Neuron Learns</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=STIX+Two+Text:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Part 1 of 2. One reading column like a lecture, broken up by dark "scene" panels where
+   the animations live: a chalkboard video turned into a page. Deliberately dark-only. */
+:root {
+  --bg: #0d0f12;
+  --panel: #14171c;
+  --line: #2a2f37;
+  --fg: #e9e6df;
+  --muted: #9aa0a8;
+  --blue: #58c4dd;
+  --red: #fc6255;
+  --yellow: #f4d345;
+  --serif: 'STIX Two Text', 'Times New Roman', Georgia, serif;
+  --sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg);
+  font: 17px/1.65 var(--sans);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0 72px;
+}
+main { max-width: 720px; margin: 0 auto; }
+p { margin: 0 0 16px; max-width: 65ch; }
+ul, ol { max-width: 65ch; }
+li { margin-bottom: 6px; }
+a { color: var(--blue); }
+a:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid var(--yellow); outline-offset: 2px; }
+code { font: 0.9em var(--mono); color: var(--yellow); }
+.blue { color: var(--blue); } .red { color: var(--red); } .yellow { color: var(--yellow); } .muted { color: var(--muted); }
+
+.hero { padding-block: 80px 40px; }
+.kicker { font: 500 12px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+h1 { font: 600 clamp(40px, 8vw, 64px)/1.05 var(--serif); margin: 14px 0 20px; text-wrap: balance; }
+h1 em { font-weight: 400; color: var(--blue); }
+.lede { font: 400 21px/1.55 var(--serif); }
+
+.chapter { padding-block: 52px 20px; border-top: 1px solid var(--line); }
+.chapter .num { font: 500 12px var(--mono); letter-spacing: .14em; color: var(--yellow); text-transform: uppercase; }
+h2 { font: 600 32px/1.15 var(--serif); margin: 8px 0 18px; text-wrap: balance; }
+
+.pause {
+  margin: 24px 0; padding: 4px 0 4px 18px; border-left: 3px solid var(--yellow);
+  font: italic 400 20px/1.5 var(--serif); max-width: 60ch;
+}
+.pause small { display: block; font: 400 13px var(--mono); color: var(--muted); font-style: normal; margin-top: 6px; letter-spacing: .04em; }
+.lesson { margin: 28px 0 8px; padding: 14px 18px; border: 1px solid var(--line); border-radius: 6px; font: 400 19px/1.5 var(--serif); }
+.lesson::before { content: 'the picture to keep'; display: block; font: 500 11px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--yellow); margin-bottom: 6px; }
+
+.scene { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 20px; margin: 28px 0; }
+.scene-title { font: 500 11px var(--mono); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; }
+.row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.controls { display: grid; grid-template-columns: auto 1fr auto; gap: 8px 14px; align-items: center; margin-top: 14px; }
+.controls output { font: 500 14px var(--mono); color: var(--yellow); min-width: 5ch; text-align: right; font-variant-numeric: tabular-nums; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font: 12px var(--mono); color: var(--muted); margin-top: 10px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: -1px; }
+
+.code { border: 1px solid var(--line); border-left: 3px solid var(--blue); border-radius: 4px; margin: 24px 0; background: var(--panel); }
+.code-file { font: 500 11px var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); padding: 8px 14px; border-bottom: 1px solid var(--line); }
+.code pre { margin: 0; padding: 12px 14px; font: 13px/1.6 var(--mono); overflow-x: auto; color: var(--fg); }
+.code pre .c { color: var(--muted); }
+.twocol { display: grid; grid-template-columns: 1fr; gap: 12px; }
+@media (min-width: 620px) { .twocol { grid-template-columns: 1fr 1fr; } }
+
+button {
+  font: 500 14px var(--sans); color: var(--fg); background: var(--bg);
+  border: 1px solid var(--line); border-radius: 4px; padding: 8px 14px; cursor: pointer;
+}
+button:hover { border-color: var(--muted); }
+button.primary { border-color: var(--blue); color: var(--blue); }
+button[aria-pressed=true] { border-color: var(--yellow); color: var(--yellow); }
+input[type=range] { width: 100%; accent-color: var(--blue); }
+input[type=checkbox] { accent-color: var(--yellow); width: 18px; height: 18px; }
+label { font: 13px var(--mono); color: var(--muted); }
+
+/* ten vertical sliders, one per last digit */
+.digits { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 4px; margin-top: 14px; text-align: center; }
+.digits input[type=range] { writing-mode: vertical-lr; direction: rtl; width: 28px; height: 110px; margin: 0 auto; display: block; }
+.digits output { display: block; font: 500 11px var(--mono); color: var(--yellow); }
+.digits label { display: block; font: 12px var(--mono); }
+
+.grid { display: grid; grid-template-columns: 56px repeat(10, minmax(0, 1fr)); gap: 3px; font: 11px var(--mono); }
+.grid .h { color: var(--muted); text-align: center; align-self: end; padding-bottom: 2px; }
+.grid .rl { color: var(--muted); align-self: center; }
+.cell {
+  aspect-ratio: 1; border: 1px solid var(--line); border-radius: 3px;
+  display: flex; align-items: center; justify-content: center;
+  font: 500 11px var(--mono); color: var(--fg); transition: background-color .25s;
+}
+.cell.zero { color: #4a505a; }
+.cell.ring { box-shadow: inset 0 0 0 2px var(--yellow); }
+
+.readout { font: 13.5px/1.75 var(--mono); white-space: pre; overflow-x: auto; margin: 0; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; }
+.stat b { display: block; font: 500 22px var(--mono); font-variant-numeric: tabular-nums; }
+.stat span { font: 11px var(--mono); color: var(--muted); letter-spacing: .08em; text-transform: uppercase; }
+
+svg { display: block; width: 100%; height: auto; }
+svg text { fill: var(--muted); font: 11px var(--mono); }
+.axis { stroke: var(--line); }
+.mid { stroke: var(--muted); stroke-dasharray: 4 4; }
+
+table { border-collapse: collapse; width: 100%; font-size: 15px; }
+td, th { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font: 500 11px var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.tablewrap { overflow-x: auto; }
+footer { border-top: 1px solid var(--line); margin-top: 48px; padding-top: 20px; font: 13px var(--mono); color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { .cell { transition: none; } }
+</style>
+
+<main>
+
+<header class="hero">
+  <div class="kicker">experiments-with-ai · 003 · part 1 of 2</div>
+  <h1>How a neuron <em>learns</em></h1>
+  <p class="lede">As a software engineer, you get a function by writing it:</p>
+  <div class="code"><div class="code-file">the way you know</div>
+<pre>def is_odd(n):
+    return n % 2</pre></div>
+  <p class="lede">Machine learning gets the same function a different way. You write a function with
+  blanks in it, and a loop fills the blanks in from examples. The loop doesn't know what odd means.
+  Nobody tells it to look at the last digit. And yet it ends up looking at the last digit.</p>
+  <p class="lede">How? That's the only question on this page. Answering it takes five ideas, and you'll
+  get to play with each one.</p>
+</header>
+
+<!-- 1 -->
+<section class="chapter" id="cell">
+  <div class="num">Idea 1</div>
+  <h2>A neuron is a weighted vote</h2>
+  <p>A brain cell listens to other cells. Each sends it a signal, and each connection has a
+  <b>strength</b>: some strong, some weak, and some that <i>hold the cell back</i>. The cell adds up what
+  comes in. If the total crosses a <b>threshold</b>, it fires. If not, it stays quiet.</p>
+  <p>Here's a made-up one that decides whether you go for a run.</p>
+
+  <div class="scene">
+    <div class="scene-title">one neuron: should I go for a run?</div>
+    <svg id="bio" viewBox="0 0 600 240" role="img" aria-label="Three inputs with connection strengths feeding into one neuron that fires or stays quiet"></svg>
+    <div class="controls" id="bio-controls"></div>
+    <div class="readout" id="bio-out" style="margin-top:14px"></div>
+  </div>
+
+  <div class="pause">With “sunny” and “tired” both on, what's the smallest change that gets you out the door?
+    <small>A signal, a strength, or the threshold: any of them will do.</small></div>
+
+  <p>In 1943, Warren McCulloch and Walter Pitts wrote this down as maths. In code it's three lines:</p>
+  <div class="code"><div class="code-file">a neuron</div>
+<pre>def neuron(inputs, weights, bias):
+    total = bias + sum(w * x for w, x in zip(weights, inputs))
+    return total > 0          <span class="c"># fire, or don't</span></pre></div>
+  <p>Strength is called <b>weight</b>. The threshold is folded into one extra number, the <b>bias</b>:
+  “fire if total ≥ 1” is the same as “fire if total − 1 ≥ 0”, so the bias is just −1. Now the
+  rule is simply <i>is the total positive?</i></p>
+  <div class="pause">Look at that function again. Where is the logic?
+    <small>Hint: it's not in the code.</small></div>
+  <p>The code is the same for every neuron that ever existed. What the neuron <i>does</i> lives
+  entirely in the numbers you pass in. Change the weights and it's a different decision-maker. <b>The
+  weights are the program.</b> So “learning” is going to mean: finding the numbers.</p>
+
+  <div class="lesson">A neuron is a weighted vote. Each input votes with its weight, the bias is a head
+  start, and the answer is the sign of the total.</div>
+</section>
+
+<!-- 2 -->
+<section class="chapter" id="one-cut">
+  <div class="num">Idea 2</div>
+  <h2>A neuron draws one straight cut</h2>
+  <p>Before asking how to find the weights, let's ask what any set of weights <i>can</i> do. Take the
+  run neuron with just two inputs: <i>sunny</i> and <i>friend coming</i>, each 0 or 1. There are only
+  four situations, the four corners of a square.</p>
+  <p>For every point in that square, the neuron's total is either positive (fire, shaded
+  <span class="blue">blue</span>) or negative (stay in, shaded <span class="red">red</span>). Drag the
+  weights and watch the border move.</p>
+
+  <div class="scene">
+    <div class="scene-title">two inputs: what one neuron can separate</div>
+    <div class="row" style="margin-bottom:10px">
+      <label>you want to run when</label>
+      <button id="cut-and" aria-pressed="true">both</button>
+      <button id="cut-or" aria-pressed="false">either</button>
+      <button id="cut-xor" aria-pressed="false">exactly one</button>
+    </div>
+    <div style="max-width:380px;margin:0 auto"><svg id="cut" viewBox="0 0 360 340" role="img" aria-label="A square of input combinations split by the neuron into fire and don't-fire regions"></svg></div>
+    <div class="legend"><span><i style="background:var(--blue)"></i>should run</span><span><i style="border:2px solid var(--red)"></i>should stay in</span><span>shading = what the neuron says</span></div>
+    <div class="controls">
+      <label for="cut-w1">weight: sunny</label><input id="cut-w1" type="range" min="-3" max="3" step="0.1" value="1"><output id="cut-w1-v"></output>
+      <label for="cut-w2">weight: friend</label><input id="cut-w2" type="range" min="-3" max="3" step="0.1" value="-1"><output id="cut-w2-v"></output>
+      <label for="cut-b">bias</label><input id="cut-b" type="range" min="-3" max="3" step="0.1" value="0"><output id="cut-b-v"></output>
+    </div>
+    <div class="readout" id="cut-out" style="margin-top:12px"></div>
+  </div>
+
+  <div class="pause">Get 4 of 4 for “both”, then for “either”. Now try “exactly one”.
+    <small>Take your time with the last one.</small></div>
+
+  <p>“Exactly one” is impossible. The border between fire and don't-fire is always a <i>straight
+  line</i>, because the total is a weighted sum, and a weighted sum changes evenly as you move across the
+  square. “Exactly one” needs the two blue corners on one side and the two red corners on the other,
+  and they sit diagonally. No straight cut separates them. This pattern is called <b>XOR</b>, and it
+  famously stalled neural network research for over a decade.</p>
+
+  <div class="lesson">Whatever the weights, a neuron splits its inputs with one straight cut. If the
+  pattern isn't one cut away, no amount of learning will find it.</div>
+</section>
+
+<!-- 3 -->
+<section class="chapter" id="line">
+  <div class="num">Idea 3</div>
+  <h2>Odd and even, as a picture</h2>
+  <p>Now our actual problem. The obvious design: one input, the number itself. Then the neuron's
+  total is</p>
+  <p style="font:italic 20px var(--serif)">score = weight × number + bias</p>
+  <p>That's <i>y = mx + b</i>, a straight line. Here's how to read the picture below, piece by piece:</p>
+  <ul>
+    <li>Left to right are twenty numbers, 4810 to 4829.</li>
+    <li>The dots are the right answers. <span class="blue">Odd numbers sit above</span> the dashed middle
+      line and <span class="red">even numbers sit below</span> it, so the dots zig-zag.</li>
+    <li>The <span class="yellow">yellow line</span> is the neuron's score for each number. The rule is the
+      same as before: <i>score above the middle means “odd”, below means “even”</i>.</li>
+    <li>So the neuron gets a number right when its dot and the yellow line are on the <i>same side</i> of
+      the middle. The shading shows which side the line is on.</li>
+  </ul>
+  <div class="pause">Tilt and slide the line. How many of the twenty can you get?</div>
+
+  <div class="scene">
+    <div class="scene-title">one input, the number: a straight line vs a zig-zag</div>
+    <svg id="ln" viewBox="0 0 600 270" role="img" aria-label="Twenty numbers with odd ones above and even ones below a middle line, and the neuron's straight score line"></svg>
+    <div class="controls">
+      <label for="ln-w">tilt (weight)</label><input id="ln-w" type="range" min="-0.6" max="0.6" step="0.02" value="0.2"><output id="ln-w-v"></output>
+      <label for="ln-c">slide</label><input id="ln-c" type="range" min="4805" max="4835" step="0.5" value="4819.5"><output id="ln-c-v"></output>
+    </div>
+    <div class="readout" id="ln-out" style="margin-top:12px"></div>
+  </div>
+
+  <p>The most you can get is about eleven. A straight line crosses the middle <i>once</i>, so it can
+  only ever say “everything after here is odd”. The answers cross the middle <i>every single step</i>.
+  It's Idea 2 again: odd and even aren't one cut apart on the number line. Over all 10,000 numbers,
+  the best any line can do is 50%, a coin flip.</p>
+
+  <div class="lesson">The neuron isn't too dumb. It's looking at the problem from an angle where the
+  answer can't be drawn with one cut.</div>
+</section>
+
+<!-- 4 -->
+<section class="chapter" id="expand">
+  <div class="num">Idea 4</div>
+  <h2>Change what it sees, not how it thinks</h2>
+  <p>So give it a better angle. Instead of one input, “the number”, give it ten inputs: “the last
+  digit is 0”, “the last digit is 1”, …, “the last digit is 9”. Each is a switch, on or off. For any
+  number, exactly one is on.</p>
+  <p>Each switch has its own weight. With just one switch on, the score is simply <i>that switch's
+  weight</i>. 4817 gets the weight for “last digit is 7”, and 4818 gets the weight for “last digit is 8”:
+  two separate numbers you can set however you like.</p>
+  <div class="pause">Here are the same twenty numbers. The ten sliders are the ten weights. Can you get
+    twenty out of twenty?</div>
+
+  <div class="scene">
+    <div class="scene-title">ten inputs: one weight per last digit</div>
+    <svg id="ex" viewBox="0 0 600 270" role="img" aria-label="Twenty numbers, each with a score bar set by its last digit's weight"></svg>
+    <div class="digits" id="ex-sliders"></div>
+    <div class="readout" id="ex-out" style="margin-top:12px"></div>
+  </div>
+
+  <p>Easy: push the odd digits up and the even digits down. Notice something about the score: it now
+  zig-zags, even though the neuron is the same weighted vote as before. Nothing about the neuron got
+  smarter. Its <i>inputs</i> got more expressive.</p>
+  <p>And look at the last line of the readout. Every number ending in 7 gets the same score, so if you
+  got twenty out of twenty here, you got <i>all ten thousand</i> right. You set ten numbers by looking at
+  twenty examples, and it works on numbers you never looked at.</p>
+  <p class="muted">In Idea 2's language, each switch is a new direction. In this ten-dimensional space,
+  odd numbers and even numbers <i>are</i> one straight cut apart. The trick of turning a value into one
+  switch per possibility is called <b>one-hot encoding</b>. GPT does the same thing with words: one switch
+  per token in its vocabulary.</p>
+
+  <div class="lesson">Choosing the inputs is choosing what's easy. With the right switches, a pattern
+  that was impossible becomes one cut.</div>
+</section>
+
+<!-- 5 -->
+<section class="chapter" id="learn">
+  <div class="num">Idea 5</div>
+  <h2>A loop that fixes its mistakes</h2>
+  <p>You just set the weights by hand. You looked at the examples, saw which way each one was wrong, and
+  moved the sliders. Could a loop that knows nothing do what you did?</p>
+  <p>In 1958, Frank Rosenblatt's answer was a rule so simple it feels like it shouldn't work. Show the
+  neuron one example at a time:</p>
+  <ul>
+    <li><b>Guess.</b> Add up the weights of the switches that are on, plus the bias. Positive means “odd”.</li>
+    <li><b>Check</b> against the right answer.</li>
+    <li><b>If it was right,</b> do nothing.</li>
+    <li><b>If it said “even” for an odd number,</b> add 1 to the weight of every switch that was on, and to the bias.
+      <b>If it said “odd” for an even one,</b> subtract 1 from them.</li>
+  </ul>
+  <p>That's it. Now let's make it harder: give it all four digits, forty switches, and don't tell it
+  which digit matters. The rows are the four digit places, the columns are the ten digit values, and each
+  cell is one weight. It starts with every weight at 0.</p>
+  <div class="pause">Before you press anything: the rule never mentions the last digit. Which weights do
+    you expect to grow?</div>
+
+  <div class="scene">
+    <div class="scene-title">the mistake rule, on 40 switches</div>
+    <div class="row" style="margin-bottom:16px">
+      <button class="primary" id="pc-next">Next example</button>
+      <button id="pc-run">Run 100</button>
+      <button id="pc-reset">Start over</button>
+    </div>
+    <div class="grid" id="pc-grid"></div>
+    <div class="readout" id="pc-out" style="margin-top:16px"></div>
+    <div class="stats" style="margin:18px 0 8px">
+      <div class="stat"><b id="pc-seen">0</b><span>examples seen</span></div>
+      <div class="stat"><b id="pc-miss" class="red">0</b><span>mistakes (= changes)</span></div>
+      <div class="stat"><b id="pc-acc" class="blue">–</b><span>right, on all 10,000</span></div>
+    </div>
+    <svg id="pc-chart" viewBox="0 0 600 170" role="img" aria-label="Two weights over time: one that matters climbs, one that doesn't wanders around zero"></svg>
+    <div class="legend"><span><i style="background:var(--yellow)"></i>weight for “digit 4 is 7”</span><span><i style="background:var(--muted)"></i>weight for “digit 2 is 8”</span></div>
+  </div>
+
+  <div class="pause">Press “Next example” twice. On 4817, the weight for “digit 2 is 8” goes up.
+    What happens to it on 6890?<small>6890 also has an 8 in second place, and it's even.</small></div>
+
+  <p>It goes straight back down. Now press “Run 100” a few times and watch the chart. The last row
+  turns into stripes, and the other three rows just jitter around zero. After a few dozen mistakes it
+  hardly makes any more, so it hardly changes any more. It has learned <code>n % 2</code>.</p>
+
+  <div class="code"><div class="code-file">the whole learning rule (a sketch, not in the repo)</div>
+<pre>weights, bias = [0] * 40, 0
+for number, answer in examples:
+    switches = switches_for(number)                    <span class="c"># 40 zeros and ones</span>
+    score = bias + sum(w * s for w, s in zip(weights, switches))
+    guess = 1 if score > 0 else 0
+    if guess != answer:
+        change = +1 if answer == 1 else -1             <span class="c"># which way it was wrong</span>
+        for i in range(40):
+            weights[i] += change * switches[i]         <span class="c"># only switches that were on</span>
+        bias += change</pre></div>
+
+  <div class="lesson">Learning is a loop that turns every mistake into a tiny edit of the numbers.</div>
+</section>
+
+<!-- 6 -->
+<section class="chapter" id="why">
+  <div class="num">The question</div>
+  <h2>So why does that work?</h2>
+  <p>Here's the part that matters most. Each step of the loop is mindless, so where did the
+  understanding come from? Four reasons, and each one is visible in the scene above.</p>
+
+  <p><b>1. A weight is a tally of evidence.</b> Read the rule again: a weight only changes when its
+  switch was on during a mistake, by +1 on odd numbers and −1 on even ones. So after training, each weight is
+  just a count: <i>(mistakes on odd numbers this switch was part of) minus (mistakes on even numbers it was part
+  of)</i>. It's a scoreboard for one piece of evidence.</p>
+
+  <p><b>2. Signal adds up, noise cancels.</b> “Digit 2 is 8” turns up in odd and even numbers about
+  equally, so its tally gets pushed both ways and goes nowhere. That's the grey line in the chart.
+  “Digit 4 is 7” turns up <i>only</i> in odd numbers, so every push goes the same way, and it climbs:
+  the yellow line. Nobody told the loop which digit matters. The only thing that survives thousands of
+  pushes is whatever is <i>consistently</i> linked to the answer. That's what a pattern is. (It's the same
+  reason averaging many noisy measurements gives you the true value.)</p>
+
+  <p><b>3. It stops when it's right.</b> The rule only edits on mistakes. Once the pattern is in the
+  weights, mistakes dry up and the numbers stop moving. It doesn't “know” it has finished; it just stops
+  getting corrected.</p>
+
+  <p><b>4. It's too small to memorise.</b> There are 10,000 numbers but only 41 weights. The neuron can't
+  store “4817 is odd” and “4818 is even” separately. Anything it keeps has to be true of <i>thousands</i>
+  of numbers at once. That squeeze is why it works on numbers it never saw. Learning is compression.</p>
+
+  <h2 style="font-size:24px;margin-top:36px">The same thing, in a software engineer's words</h2>
+  <div class="twocol">
+    <div class="code"><div class="code-file">programming</div>
+<pre>you write:   the rules
+you give:    an input
+you get:     an answer</pre></div>
+    <div class="code"><div class="code-file">machine learning</div>
+<pre>you write:   a template + a fix-up rule
+you give:    inputs AND answers
+you get:     the rules (as numbers)</pre></div>
+  </div>
+  <p>If that still feels like magic, think of test-driven development where the computer edits the
+  code. The examples are the test suite. The weights are the code, written in a strange language of
+  numbers. Each failing test causes a tiny automatic edit. You run the suite again and again until it
+  passes. Then you check it against a few <i>hidden</i> tests it was never edited against, to make sure
+  it learned the rule and didn't just special-case the visible ones.</p>
+  <p>You haven't stopped giving the machine instructions. You've moved up one level. Instead of “here's how
+  to tell odd from even”, the instruction is “here's how to <i>get less wrong</i>”. That works whenever
+  three things are true:</p>
+  <ol>
+    <li><b>The template can express the answer.</b> Some setting of the weights solves it. Idea 3 failed
+      this test; Idea 4 passed it.</li>
+    <li><b>You can tell right from wrong.</b> You have examples with answers. Here, <code>n % 2</code> made them for free.</li>
+    <li><b>Each mistake says which way to move.</b> “Said even, should be odd” means push the on switches up.</li>
+  </ol>
+  <p>Everything in deep learning, GPT included, is these three things at a much bigger scale.</p>
+</section>
+
+<!-- 7 -->
+<section class="chapter" id="next">
+  <div class="num">Where this leaves us</div>
+  <h2>What one neuron can't do, and part 2</h2>
+  <p>Idea 2 already showed the limit: one neuron makes one straight cut, so “exactly one” (XOR) is out
+  of reach. The fix is to feed neurons into other neurons, so that the first layer's outputs become the
+  next one's inputs. Each layer gets to re-draw the picture so that the next one only needs one cut.</p>
+  <p>Part 2 builds this page's neuron for real, in about a hundred lines of Python. It upgrades the
+  mistake rule into the smooth version every modern network uses: it learns from <i>every</i> example,
+  by <i>how</i> wrong it was, not just whether it was wrong. Then it hits its own XOR: “is it divisible by
+  3?”</p>
+  <p style="font:400 21px/1.5 var(--serif)"><a href="https://claude.ai/artifact/7G1D82pQXPUXimtnkxo1n4">Part 2: Even or odd, learned →</a></p>
+  <p class="muted">Further reading: <a href="https://en.wikipedia.org/wiki/Perceptron">Wikipedia, <i>Perceptron</i></a>
+  (the history, including the XOR winter) ·
+  <a href="http://neuralnetworksanddeeplearning.com/chap1.html">Michael Nielsen, chapter 1</a> (perceptrons, then sigmoid neurons) ·
+  <a href="https://www.3blue1brown.com/topics/neural-networks">3Blue1Brown, <i>Neural Networks</i></a>.</p>
+</section>
+
+<footer>experiments-with-ai · 003 · part 1 of 2 · the live scenes use their own random numbers.</footer>
+</main>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const signed = (v, d = 2) => (v < 0 ? '−' : '+') + Math.abs(v).toFixed(d);
+  const lit = (n) => [...String(n).padStart(4, '0')].map((d, i) => i * 10 + Number(d));
+  const pad = (n) => String(n).padStart(4, '0');
+  const svgEl = (tag, attrs, text) => {
+    const e = document.createElementNS('http://www.w3.org/2000/svg', tag);
+    for (const k in attrs) e.setAttribute(k, attrs[k]);
+    if (text !== undefined) e.textContent = text;
+    return e;
+  };
+  function rng(seed) {   // small seeded random generator (mulberry32)
+    return () => {
+      seed = (seed + 0x6D2B79F5) | 0;
+      let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function slider(id, fmt, onInput) {
+    const el = $(id), out = $(id + '-v');
+    const update = () => { out.textContent = fmt(Number(el.value)); onInput(); };
+    el.addEventListener('input', update);
+    return { get: () => Number(el.value), init: update };
+  }
+
+  // ---- Idea 1: a brain cell -------------------------------------------------------------
+  const BIO = [
+    { name: "it's sunny", on: true, w: 2 },
+    { name: 'a friend is coming', on: false, w: 1.5 },
+    { name: "I'm tired", on: true, w: -3 },
+  ];
+  let bioThreshold = 1, bioThresholdOut;
+  (function buildBio() {
+    const box = $('bio-controls');
+    BIO.forEach((inp, k) => {
+      const lab = document.createElement('label');
+      const cb = Object.assign(document.createElement('input'), { type: 'checkbox', checked: inp.on });
+      lab.style.display = 'flex'; lab.style.gap = '8px'; lab.style.alignItems = 'center';
+      lab.append(cb, ` ${inp.name}`);
+      const r = Object.assign(document.createElement('input'), { type: 'range', min: -4, max: 4, step: 0.5, value: inp.w });
+      r.setAttribute('aria-label', `strength of ${inp.name}`);
+      inp.out = document.createElement('output');
+      cb.addEventListener('change', () => { inp.on = cb.checked; renderBio(); });
+      r.addEventListener('input', () => { inp.w = Number(r.value); renderBio(); });
+      box.append(lab, r, inp.out);
+    });
+    const lab = Object.assign(document.createElement('label'), { textContent: 'threshold', htmlFor: 'bio-t' });
+    const r = Object.assign(document.createElement('input'), { type: 'range', min: -4, max: 4, step: 0.5, value: bioThreshold, id: 'bio-t' });
+    bioThresholdOut = document.createElement('output');
+    r.addEventListener('input', () => { bioThreshold = Number(r.value); renderBio(); });
+    box.append(lab, r, bioThresholdOut);
+  })();
+  function renderBio() {
+    const total = BIO.reduce((s, i) => s + (i.on ? i.w : 0), 0);
+    const fires = total >= bioThreshold;
+    const svg = $('bio'), cx = 400, cy = 120;
+    svg.replaceChildren();
+    BIO.forEach((inp, k) => {
+      const y = 50 + k * 70, col = inp.w >= 0 ? 'var(--blue)' : 'var(--red)';
+      svg.append(svgEl('line', { x1: 150, y1: y, x2: cx - 40, y2: cy, stroke: col, 'stroke-width': 1 + Math.abs(inp.w) * 2, opacity: inp.on ? 1 : 0.18 }));
+      svg.append(svgEl('circle', { cx: 150, cy: y, r: 7, fill: inp.on ? 'var(--yellow)' : 'var(--line)' }));
+      svg.append(svgEl('text', { x: 138, y: y + 4, 'text-anchor': 'end' }, inp.name));
+      const tw = svgEl('text', { x: 230, y: y + (cy - y) * 0.35 - 6, 'text-anchor': 'middle' }, signed(inp.w, 1));
+      tw.style.fill = col; svg.append(tw);
+      inp.out.textContent = signed(inp.w, 1);
+    });
+    svg.append(svgEl('line', { x1: cx + 46, y1: cy, x2: 530, y2: cy, stroke: fires ? 'var(--yellow)' : 'var(--line)', 'stroke-width': 4 }));
+    svg.append(svgEl('circle', { cx, cy, r: 46, fill: fires ? 'var(--yellow)' : 'var(--panel)', stroke: 'var(--yellow)', 'stroke-width': 2 }));
+    const tt = svgEl('text', { x: cx, y: cy + 5, 'text-anchor': 'middle' }, signed(total, 1));
+    tt.style.fill = fires ? '#0d0f12' : 'var(--fg)'; tt.style.fontSize = '16px'; svg.append(tt);
+    const out = svgEl('text', { x: 562, y: cy + 4, 'text-anchor': 'middle' }, fires ? 'run!' : 'stay in');
+    out.style.fill = fires ? 'var(--yellow)' : 'var(--muted)'; svg.append(out);
+    bioThresholdOut.textContent = signed(bioThreshold, 1);
+    const parts = BIO.map((i) => `${i.on ? 1 : 0} × ${signed(i.w, 1)}`).join('  +  ');
+    $('bio-out').innerHTML = `total = ${parts} = <span class="yellow">${signed(total, 1)}</span>
+${signed(total, 1)} ${fires ? '≥' : '<'} threshold ${signed(bioThreshold, 1)}  →  <b>${fires ? 'fires: go for a run' : 'stays quiet: stay in'}</b>`;
+  }
+  renderBio();
+
+  // ---- Idea 2: one straight cut ---------------------------------------------------------
+  const TARGETS = { and: [0, 0, 0, 1], or: [0, 1, 1, 1], xor: [0, 1, 1, 0] };   // corners (0,0) (1,0) (0,1) (1,1)
+  const CORNERS = [[0, 0], [1, 0], [0, 1], [1, 1]];
+  let cutRule = 'and';
+  const px = (v) => 50 + (v + 0.4) / 1.8 * 290, py = (v) => 290 - (v + 0.4) / 1.8 * 270;
+  const cw1 = slider('cut-w1', (v) => signed(v, 1), renderCut);
+  const cw2 = slider('cut-w2', (v) => signed(v, 1), renderCut);
+  const cb = slider('cut-b', (v) => signed(v, 1), renderCut);
+  ['and', 'or', 'xor'].forEach((r) => $('cut-' + r).addEventListener('click', () => {
+    cutRule = r;
+    ['and', 'or', 'xor'].forEach((q) => $('cut-' + q).setAttribute('aria-pressed', q === r));
+    renderCut();
+  }));
+  function renderCut() {
+    const w1 = cw1.get(), w2 = cw2.get(), b = cb.get();
+    const svg = $('cut');
+    svg.replaceChildren();
+    const N = 24, step = 1.8 / N;
+    for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) {
+      const x = -0.4 + (i + 0.5) * step, y = -0.4 + (j + 0.5) * step;
+      const fire = w1 * x + w2 * y + b > 0;
+      svg.append(svgEl('rect', { x: px(x - step / 2), y: py(y + step / 2), width: 290 / N + 0.5, height: 270 / N + 0.5,
+        fill: fire ? 'var(--blue)' : 'var(--red)', opacity: 0.16 }));
+    }
+    svg.append(svgEl('rect', { x: px(0), y: py(1), width: px(1) - px(0), height: py(0) - py(1), fill: 'none', stroke: 'var(--line)' }));
+    let right = 0;
+    CORNERS.forEach(([x, y], k) => {
+      const want = TARGETS[cutRule][k], got = w1 * x + w2 * y + b > 0 ? 1 : 0;
+      if (want === got) right++;
+      svg.append(svgEl('circle', { cx: px(x), cy: py(y), r: 13, fill: want ? 'var(--blue)' : 'var(--bg)', stroke: want ? 'var(--blue)' : 'var(--red)', 'stroke-width': 3 }));
+      const t = svgEl('text', { x: px(x) + (x ? 20 : -20), y: py(y) - 14, 'text-anchor': 'middle' }, want === got ? '✓' : '✗');
+      t.style.fill = want === got ? 'var(--yellow)' : 'var(--red)'; t.style.fontSize = '15px';
+      svg.append(t);
+    });
+    svg.append(svgEl('text', { x: px(0), y: 318, 'text-anchor': 'middle' }, 'not sunny'));
+    svg.append(svgEl('text', { x: px(1), y: 318, 'text-anchor': 'middle' }, 'sunny'));
+    svg.append(svgEl('text', { x: 40, y: py(0) + 4, 'text-anchor': 'end' }, 'no'));
+    svg.append(svgEl('text', { x: 40, y: py(1) + 4, 'text-anchor': 'end' }, 'friend'));
+    $('cut-out').innerHTML = `total = ${signed(w1, 1)} × sunny ${signed(w2, 1)} × friend ${signed(b, 1)}
+right: <span class="${right === 4 ? 'yellow' : 'fg'}">${right} of 4</span>${right === 4 ? '  ✓ one straight cut does it' : ''}`;
+  }
+  cw1.init(); cw2.init(); cb.init();
+
+  // ---- Ideas 3 and 4: the twenty-number chart -------------------------------------------
+  const FIRST = 4810, COUNT = 20;
+  const NUMS = Array.from({ length: COUNT }, (_, i) => FIRST + i);
+  const SMAX = 3;
+  const cx = (n) => 40 + (n - FIRST + 0.5) / COUNT * 550, cy = (s) => 120 - s / SMAX * 95;
+  const colW = 550 / COUNT;
+
+  // Draws the shared frame: shading by what the neuron says, the answer dots, ticks/crosses.
+  function drawChart(svg, scoreOf, drawScore) {
+    svg.replaceChildren();
+    let right = 0;
+    for (const n of NUMS) {
+      const s = scoreOf(n), saysOdd = s > 0, ok = (saysOdd ? 1 : 0) === n % 2;
+      if (ok) right++;
+      svg.append(svgEl('rect', { x: cx(n) - colW / 2, y: 25, width: colW, height: 190, fill: saysOdd ? 'var(--blue)' : 'var(--red)', opacity: 0.1 }));
+      const m = svgEl('text', { x: cx(n), y: 236, 'text-anchor': 'middle' }, ok ? '✓' : '✗');
+      m.style.fill = ok ? 'var(--yellow)' : 'var(--red)';
+      svg.append(m);
+      if ((n - FIRST) % 2 === 0) svg.append(svgEl('text', { x: cx(n), y: 256, 'text-anchor': 'middle' }, String(n)));
+    }
+    svg.append(svgEl('line', { class: 'mid', x1: 40, y1: cy(0), x2: 590, y2: cy(0) }));
+    svg.append(svgEl('text', { x: 36, y: cy(1.9) + 4, 'text-anchor': 'end' }, 'odd'));
+    svg.append(svgEl('text', { x: 36, y: cy(-1.9) + 4, 'text-anchor': 'end' }, 'even'));
+    drawScore(svg);
+    const zig = NUMS.map((n) => `${cx(n).toFixed(1)},${cy(n % 2 ? 1.6 : -1.6).toFixed(1)}`).join(' ');
+    svg.append(svgEl('polyline', { points: zig, fill: 'none', stroke: 'var(--muted)', 'stroke-width': 1, 'stroke-dasharray': '2 3' }));
+    for (const n of NUMS) svg.append(svgEl('circle', { cx: cx(n), cy: cy(n % 2 ? 1.6 : -1.6), r: 5, fill: n % 2 ? 'var(--blue)' : 'var(--red)' }));
+    return right;
+  }
+
+  // Idea 3: score = weight × (number − slide point), i.e. weight × number + bias.
+  const lw = slider('ln-w', (v) => signed(v, 2), renderLine);
+  const lc = slider('ln-c', (v) => v.toFixed(1), renderLine);
+  function renderLine() {
+    const w = lw.get(), c = lc.get(), score = (n) => w * (n - c);
+    const right = drawChart($('ln'), score, (svg) => {
+      const clip = svgEl('clipPath', { id: 'ln-clip' });
+      clip.append(svgEl('rect', { x: 40, y: 25, width: 550, height: 190 }));
+      svg.append(clip);
+      svg.append(svgEl('line', { x1: 40, y1: cy(w * (FIRST - 0.5 - c)), x2: 590, y2: cy(w * (FIRST + COUNT - 0.5 - c)),
+        stroke: 'var(--yellow)', 'stroke-width': 3, 'clip-path': 'url(#ln-clip)' }));
+    });
+    let all = 0;
+    for (let n = 0; n < 10000; n++) if ((score(n) > 0 ? 1 : 0) === n % 2) all++;
+    $('ln-out').innerHTML = `score = ${signed(w, 2)} × number ${signed(-w * c, 1)}
+right: <span class="yellow">${right} of 20</span>  ·  on all 10,000 numbers: ${(all / 100).toFixed(1)}%`;
+  }
+  lw.init(); lc.init();
+
+  // Idea 4: one weight per last digit; the score is that digit's weight.
+  const digitW = new Array(10).fill(0);
+  (function buildDigits() {
+    const box = $('ex-sliders');
+    for (let d = 0; d < 10; d++) {
+      const cell = document.createElement('div');
+      const r = Object.assign(document.createElement('input'), { type: 'range', min: -2, max: 2, step: 0.1, value: 0, id: `ex-d${d}` });
+      r.setAttribute('aria-label', `weight for last digit ${d}`);
+      const o = document.createElement('output');
+      const l = Object.assign(document.createElement('label'), { htmlFor: `ex-d${d}`, textContent: `…${d}` });
+      r.addEventListener('input', () => { digitW[d] = Number(r.value); renderExpand(); });
+      digitW.outs = digitW.outs || [];
+      digitW.outs[d] = o;
+      cell.append(o, r, l);
+      box.append(cell);
+    }
+  })();
+  function renderExpand() {
+    const score = (n) => digitW[n % 10];
+    const right = drawChart($('ex'), score, (svg) => {
+      for (const n of NUMS) {
+        const s = score(n);
+        if (Math.abs(s) < 1e-9) continue;
+        svg.append(svgEl('rect', { x: cx(n) - colW * 0.3, y: Math.min(cy(0), cy(s)), width: colW * 0.6, height: Math.abs(cy(s) - cy(0)), fill: 'var(--yellow)', opacity: 0.85 }));
+      }
+    });
+    digitW.outs.forEach((o, d) => { o.textContent = signed(digitW[d], 1); });
+    let all = 0;
+    for (let d = 0; d < 10; d++) if ((digitW[d] > 0 ? 1 : 0) === d % 2) all += 1000;
+    $('ex-out').innerHTML = `score of a number = the weight of its last digit   (4817 → weight “…7” = ${signed(digitW[7], 1)})
+right: <span class="yellow">${right} of 20</span>  ·  on all 10,000 numbers: ${(all / 100).toFixed(1)}%`;
+  }
+  renderExpand();
+
+  // ---- Idea 5: the mistake rule on 40 switches ------------------------------------------
+  const ORD = ['digit 1', 'digit 2', 'digit 3', 'digit 4'];
+  const W47 = 37, W28 = 18;   // "digit 4 is 7" and "digit 2 is 8"
+  const cells = (function makeGrid(el) {
+    el.append(Object.assign(document.createElement('div'), { className: 'h', textContent: '' }));
+    for (let v = 0; v < 10; v++) el.append(Object.assign(document.createElement('div'), { className: 'h', textContent: v }));
+    const out = [];
+    for (let p = 0; p < 4; p++) {
+      el.append(Object.assign(document.createElement('div'), { className: 'rl', textContent: ORD[p] }));
+      for (let v = 0; v < 10; v++) { const c = document.createElement('div'); c.className = 'cell'; el.append(c); out.push(c); }
+    }
+    return out;
+  })($('pc-grid'));
+  const SCRIPT = [4817, 6890];
+  let pc;
+  function pcReset() {
+    pc = { w: new Array(40).fill(0), b: 0, seen: 0, mistakes: 0, r: rng(7), hist: [[0, 0, 0]], ring: [] };
+    $('pc-out').innerHTML = 'Every weight starts at 0. Press <span class="blue">Next example</span>.';
+    pcRender();
+  }
+  const pcScore = (on) => pc.b + on.reduce((s, i) => s + pc.w[i], 0);
+  function pcStep(verbose) {
+    const n = pc.seen < SCRIPT.length ? SCRIPT[pc.seen] : Math.floor(pc.r() * 10000);
+    const y = n % 2, on = lit(n), s = pcScore(on), guess = s > 0 ? 1 : 0;
+    pc.seen++;
+    const wrong = guess !== y, change = y ? 1 : -1;
+    if (wrong) { pc.mistakes++; on.forEach((i) => { pc.w[i] += change; }); pc.b += change; }
+    pc.hist.push([pc.seen, pc.w[W47], pc.w[W28]]);
+    pc.ring = on;
+    if (verbose) {
+      const word = (v) => (v ? '<span class="blue">odd</span>' : '<span class="red">even</span>');
+      const names = on.map((i) => `digit ${Math.floor(i / 10) + 1} is ${i % 10}`).join(', ');
+      $('pc-out').innerHTML =
+`example ${pc.seen}:  <span class="yellow">${pad(n)}</span>   switches on: ${names}
+score = bias + those 4 weights = ${signed(s, 0)}   →  says ${word(guess)}, answer is ${word(y)}
+${wrong ? `<span class="red">wrong</span>  →  ${change > 0 ? 'add 1 to' : 'subtract 1 from'} each ringed weight, and the bias (now ${signed(pc.b, 0)})`
+        : '<span class="yellow">right</span>  →  change nothing'}`;
+    }
+  }
+  function pcRender() {
+    const scale = Math.max(1, ...pc.w.map(Math.abs));
+    cells.forEach((c, i) => {
+      const v = pc.w[i], a = Math.min(1, Math.abs(v) / scale);
+      c.className = 'cell' + (pc.ring.includes(i) ? ' ring' : '') + (v === 0 ? ' zero' : '');
+      c.style.background = v === 0 ? 'transparent' : v > 0 ? `rgba(88,196,221,${(0.15 + 0.75 * a).toFixed(2)})` : `rgba(252,98,85,${(0.15 + 0.75 * a).toFixed(2)})`;
+      c.style.color = a > 0.55 ? '#0d0f12' : '';
+      c.textContent = v === 0 ? '0' : (v > 0 ? '+' : '−') + Math.abs(v);
+    });
+    let all = 0;
+    for (let n = 0; n < 10000; n++) if ((pcScore(lit(n)) > 0 ? 1 : 0) === n % 2) all++;
+    $('pc-seen').textContent = pc.seen;
+    $('pc-miss').textContent = pc.mistakes;
+    $('pc-acc').textContent = pc.seen ? (all / 100).toFixed(1) + '%' : '–';
+    const maxX = Math.max(100, pc.seen), maxY = Math.max(3, ...pc.hist.map((h) => Math.max(Math.abs(h[1]), Math.abs(h[2]))));
+    const X = (s) => 40 + s / maxX * 550, Y = (v) => 85 - v / maxY * 70;
+    const line = (k) => pc.hist.map((h) => `${X(h[0]).toFixed(1)},${Y(h[k]).toFixed(1)}`).join(' ');
+    $('pc-chart').innerHTML = `
+      <line class="mid" x1="40" y1="${Y(0)}" x2="590" y2="${Y(0)}"/>
+      <text x="34" y="${Y(0) + 4}" text-anchor="end">0</text>
+      <text x="34" y="${Y(maxY) + 4}" text-anchor="end">+${maxY}</text>
+      <text x="34" y="${Y(-maxY) + 4}" text-anchor="end">−${maxY}</text>
+      <text x="590" y="166" text-anchor="end">examples seen: ${pc.seen}</text>
+      <polyline points="${line(2)}" fill="none" stroke="var(--muted)" stroke-width="2"/>
+      <polyline points="${line(1)}" fill="none" stroke="var(--yellow)" stroke-width="2.5"/>`;
+  }
+  $('pc-next').addEventListener('click', () => { pcStep(true); pcRender(); });
+  $('pc-run').addEventListener('click', () => {
+    for (let k = 0; k < 99; k++) pcStep(false);
+    pcStep(true); pcRender();
+  });
+  $('pc-reset').addEventListener('click', pcReset);
+  pcReset();
+})();
+</script>
