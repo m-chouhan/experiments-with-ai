@@ -68,6 +68,7 @@ The structure is the same for every neuron that ever existed. But the knowledge 
 
 *total = 2 + 0 − 3 = **−1**, which is below the threshold of 1, so: stay in. With "sunny" and "tired" both on, what's the smallest change that gets me out of the door? Stop being tired, make "sunny" count for more, or drop the threshold: any of them will do. (A friend alone isn't enough: −1 + 1.5 = 0.5, still below 1.)*
 
+<!-- interactive: readers flip the run neuron's inputs and drag its weights and threshold, and watch the total and the decision change -->
 ![The run neuron: flipping inputs and moving a weight or the threshold changes the total and the decision](images/run.gif)
 
 ### The weights are the program!
@@ -86,19 +87,19 @@ Answer: it means finding the right weights and bias, so that our software progra
 
 For that, it's important to pause and teach a single neuron *anything* first. And you're going to do it by hand.
 
-Take the run neuron with just two inputs: *sunny* and *friend coming*, each can be either 0 or 1.   
+Take the run neuron with just two inputs: *sunny* and *friend coming*, each can be either 0 or 1.  
 That's only four situations. Pick what you want the neuron to learn, then move the weights until it learns :  
-
 
 a) go out only if it's sunny and friend is coming  
 b) go out if it's sunny OR a friend is coming  
 c) go out if either of them is true, BUT not both.
 
+<!-- interactive: readers pick a rule (both, either, exactly one) and drag the two weights and the bias until the cut gets all four corners right -->
 ![The four sunny / friend situations as the corners of a square; the neuron's cut is a straight line, which gets "both" and "either" right but always misses a corner on "exactly one"](images/corners.gif)
 
 Congratulations! You just taught a neuron two different rules, and the only thing you changed was a few numbers. :P
 
-What about (c), "exactly one"? You can't do it. Put the four situations on the corners of a square, and the border between "fire" and "don't fire" is always a **straight line** across it. A weighted sum can only ever make [one straight cut](https://en.wikipedia.org/wiki/Linear_separability), and "exactly one" needs its two "run" corners on opposite diagonals. Hold on to that, because it's about to bite us.
+What about (c), "exactly one"? You can't do it. Put the four situations on the corners of a square, and the border between "fire" and "don't fire" is always a **straight line** across it. A weighted sum can only ever make [one straight cut](https://en.wikipedia.org/wiki/Linear_separability), and "exactly one" needs its two "run" corners on opposite diagonals. Hold on to this idea, because it took researchers decades to figure this one out.
 
 > **The picture to keep:** teaching a neuron = moving its weights until it gives the right answer. And whatever the weights, a single neuron can only split its inputs with one straight cut.
 
@@ -111,6 +112,7 @@ How do we teach a neuron the difference between even and odd numbers?
 **Attempt 1: give it the number.**  
 The obvious design is one input: the number itself. Then the neuron's total is `weight × number + bias`, a straight line. But the answers zig-zag: odd, even, odd, even.
 
+<!-- interactive: readers tilt and slide the one-input line over the twenty numbers and count how many it gets right -->
 ![A straight line over the numbers 1 to 20: however it is tilted or slid, it gets at most 11 of them right](images/line.gif)
 
 However you tilt and slide it, the best it gets is eleven out of twenty. A straight line crosses the middle *once*. The answers cross it on *every single step*. It's the "exactly one" problem again. Over all 10,000 numbers, the best any line can do is 50%, a coin flip.
@@ -127,6 +129,7 @@ Let's try a different approach: represent the number differently. Instead of one
 
 Each switch gets its own weight. With just one switch on, the total is simply *that switch's weight* (plus the bias). Now 4817 and 4818 aren't neighbours on a line any more. They use two completely separate weights.
 
+<!-- interactive: readers drag one weight per last digit until all twenty numbers are right -->
 ![Ten sliders, one weight per last digit: pushing odd digits up and even digits down turns all twenty numbers right](images/sliders.gif)
 
 Twenty out of twenty is easy: push the odd digits up and the even digits down. And every number ending in 7 gets the same total, so twenty out of twenty means *all ten thousand* are right. Nothing about the neuron got smarter. Its *inputs* did.
@@ -182,6 +185,7 @@ for number, answer in examples:
 
 I ran it on 2,000 random numbers. Here's every mistake it made, and every nudge:
 
+<!-- interactive: readers step through the real training run mistake by mistake and watch the weight grid fill in -->
 ![The 4 × 10 weight grid during training: each mistake nudges the four switches of that number, until the last row is striped and accuracy reaches 100%](images/training.gif)
 
 The last row turns into stripes, and the other three rows stay at (or near) zero. After a few dozen mistakes it hardly makes any more, so it hardly changes any more.
@@ -208,9 +212,9 @@ Each step of that loop is completely mindless. So where did the understanding co
 
 > **The picture to keep:** learning is a loop that turns every mistake into a tiny edit of the numbers. Only what's consistently linked to the answer survives all those edits, and that's exactly what a pattern is.
 
-> **🐇 Rabbit hole: the line that froze AI for a decade**
+> **🐇 Rabbit hole: why "exactly one" took decades**
 >
-> Remember "exactly one"? In 1969, [Marvin Minsky](https://en.wikipedia.org/wiki/Marvin_Minsky) and [Seymour Papert](https://en.wikipedia.org/wiki/Seymour_Papert) published a book, [*Perceptrons*](https://en.wikipedia.org/wiki/Perceptrons_(book)), showing exactly that limit: one neuron can't learn it, however long you train. Interest and funding for neural networks [dried up for years](https://en.wikipedia.org/wiki/AI_winter). The way out was to feed neurons into other neurons, which is where this series is going.
+> One neuron draws one straight line, so it can never learn "exactly one". The fix is more neurons, feeding into each other. But then our loop breaks. It works because a wrong answer tells us exactly which weights to nudge: the ones whose switches were on. With many neurons chained together, a wrong answer at the end doesn't tell us which weights inside caused it. Researchers were stuck on that for years. The answer is called **[backpropagation](https://en.wikipedia.org/wiki/Backpropagation)**: a way to work out how much each weight is to blame for the mistake, so every weight knows which way to move. Every GPT is still trained this way today, and we'll get to it later in this series :)
 
 ---
 
@@ -222,17 +226,20 @@ Each step of that loop is completely mindless. So where did the understanding co
 | **you give** | the input | inputs AND answers |
 | **you get** | an answer | the rules, as weights |
 
-You haven't stopped giving the machine instructions. You've moved up one level. Instead of "here's how to tell odd from even", the instruction is "here's how to get less wrong". And the part that's still very much your job is the data and the inputs. Remember, the whole thing only worked because we picked the right switches.
+Andrej Karpathy has an interesting name for this shift: **[Software 2.0](https://karpathy.medium.com/software-2-0-a64152b37c35)**.
+
+1. **Software 1.0, write the rule for the machine:** `n % 2 == 1`. One line. Done.
+2. **Software 2.0, let the machine learn the rule:** what this whole post did. 40 weights and a loop that nudged them on every mistake. The weights *are* the program, and instead of writing them, we train the model to find them.
+
+For odd and even, option 1 wins by a mile. It's shorter, it's faster, and it's right by construction, not by testing. We spent a whole post re-deriving one line of code. The interesting shift is that we can now solve a whole class of problems where option 1 doesn't even exist. Nobody can write `is_cat(photo)` or `next_character("th")` as a rule. For those, learning isn't the slow way. It's probably the only way.
+
+Odd and even was just a problem small enough to watch it happen.
 
 ---
 
 ## Play with it
 
-Everything above is in one file, [`playground.py`](https://github.com/m-chouhan/experiments-with-ai/blob/main/experiments/003-how-does-a-model-learn/playground.py). No libraries, just `python3 playground.py`. The knobs are at the top:
-
-- Set `INPUTS = 'number'` and watch it get stuck at 50%. Then try `'last digit'`, then `'all digits'`.
-- Swap the `rule` for "divisible by 3" and watch one neuron fail. (Why? "Exactly one" again.)
-- Change `EXAMPLES` and `SEED` and see how few examples it really needs.
+Everything above is in one file: [`playground.py`](https://github.com/m-chouhan/experiments-with-ai/blob/main/experiments/003-how-does-a-model-learn/playground.py).
 
 ---
 
@@ -253,7 +260,7 @@ If something here didn't click, or you know a better way to explain it, tell me 
 
 1. [3Blue1Brown, *Neural Networks*](https://www.3blue1brown.com/topics/neural-networks). The videos that inspired this post.
 2. [Michael Nielsen, *Neural Networks and Deep Learning*, chapter 1](http://neuralnetworksanddeeplearning.com/chap1.html). Perceptrons, then sigmoid neurons. The same path as this post.
-3. [Wikipedia, *Perceptron*](https://en.wikipedia.org/wiki/Perceptron). The history, including Rosenblatt and the Minsky–Papert book.
+3. [Wikipedia, *Perceptron*](https://en.wikipedia.org/wiki/Perceptron). Where the perceptron came from, and what one neuron can and can't do.
 4. [Andrej Karpathy, *The spelled-out intro to neural networks and backpropagation*](https://www.youtube.com/watch?v=VMj-3S1tku0). The step after this one.
 
 ---
