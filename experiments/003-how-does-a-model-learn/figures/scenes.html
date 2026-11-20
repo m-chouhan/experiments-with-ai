@@ -55,25 +55,23 @@ function sceneLearning() {
 
 // ---- B: the run neuron -----------------------------------------------------------------------
 function sceneRun() {
-  const base = { on0: 1, on1: 0, on2: 1, w0: 2, w1: 1.5, w2: -3, thr: 1, note: 'sunny and tired: the total is below the threshold' };
+  const base = { on0: 1, on1: 0, w0: 2, w1: 1.5, thr: 3, note: 'sunny, but alone: the total is below the threshold' };
   const frames = [];
   const hold = (s, ms) => frames.push({ ...s, ms });
   const move = (from, to, n = 8) => tween(from, to, n).forEach((s) => frames.push({ ...s, ms: 70 }));
   hold(base, 2400);
-  const friend = { ...base, on1: 1, note: 'a friend comes along: closer, but still not enough' };
+  const friend = { ...base, on1: 1, note: 'a friend comes along: over the line' };
   hold(friend, 2400);
-  const rested = { ...base, on2: 0, note: 'stop being tired: over the line' };
-  hold(rested, 2400);
-  hold({ ...base, note: 'back to sunny and tired…' }, 1000);
-  const sunny = { ...base, w0: 4.5, note: 'or make "sunny" count for more' };
+  hold({ ...base, note: 'back to just sunny…' }, 1000);
+  const sunny = { ...base, w0: 4, note: 'or make "sunny" count for more' };
   move({ ...base }, sunny); hold(sunny, 2000);
-  move(sunny, { ...base, note: 'back to sunny and tired…' }, 6); hold({ ...base, note: 'back to sunny and tired…' }, 700);
-  const low = { ...base, thr: -2, note: 'or lower the threshold' };
+  move(sunny, { ...base, note: 'back to just sunny…' }, 6); hold({ ...base, note: 'back to just sunny…' }, 700);
+  const low = { ...base, thr: 1.5, note: 'or lower the threshold' };
   move({ ...base }, low); hold(low, 2000);
   move(low, { ...base, note: 'the code never changed. only the numbers did.' }, 6); hold({ ...base, note: 'the code never changed. only the numbers did.' }, 2200);
-  const labels = ["it's sunny", 'a friend is coming', "I'm tired"];
+  const labels = ["it's sunny", 'a friend is coming'];
   const draw = (f) => {
-    const on = [f.on0, f.on1, f.on2], w = [f.w0, f.w1, f.w2];
+    const on = [f.on0, f.on1], w = [f.w0, f.w1];
     const total = on.reduce((a, o, i) => a + o * w[i], 0);
     const run = total > f.thr + 1e-9;
     let body = '';
@@ -85,8 +83,8 @@ function sceneRun() {
       body += t(330, y, fmt(w[i]), `class="mono" font-size="18" fill="${C.yellow}"`);
       body += t(420, y, on[i] ? fmt(on[i] * w[i]) : '0', `class="mono" font-size="18" fill="${on[i] ? C.fg : C.muted}"`);
     });
-    body += `<path d="M40 268 H470" stroke="${C.line}"/>`;
-    body += t(330, 298, 'total', `font-size="15" fill="${C.green}"`) + t(420, 298, fmt(total) || '0', `class="mono" font-size="20" font-weight="600" fill="${C.green}"`);
+    body += `<path d="M40 216 H470" stroke="${C.line}"/>`;
+    body += t(330, 246, 'total', `font-size="15" fill="${C.green}"`) + t(420, 246, fmt(total) || '0', `class="mono" font-size="20" font-weight="600" fill="${C.green}"`);
     // number line
     const X = (v) => 520 + (v + 4) * 30, y = 150;
     body += `<rect x="${X(f.thr)}" y="${y - 40}" width="${X(5) - X(f.thr)}" height="80" fill="${C.green}" opacity="0.10"/>`;

@@ -54,28 +54,35 @@ This became the basis of the neuro + mathematical + computing model of artificia
 
 As software engineers, we're used to giving instructions to a machine. This equation reverses that paradigm.
 
-Look at that function again. Where do you think the logic (the instructions, the information) of the program lives? Think about it for a sec.
+Look at that function again. Where do you think the logic (the instructions, the information) of the program lives?
+Let's run through a simple example to build the mental model, which will help us arrive at the key insight.
 
-Answer: it's all in the **weights and the bias**.
+Say we want to build a neuron that outputs a signal for whether I go out for a run or not.
+Signal on → we go for a run, signal off → we stay put. Now what could the input signals for this be?
 
-The structure is the same for every neuron that ever existed. But the knowledge lives entirely in its weights and bias. Here's a made-up neuron that decides whether I go for a run:
+Let's say we have 2 signals.
 
 | input signal       | on? | weight |
 | ------------------ | --- | ------ |
 | it's sunny         | 1   | +2     |
 | a friend is coming | 0   | +1.5   |
-| I'm tired          | 1   | −3     |
 
-*total = 2 + 0 − 3 = **−1**, which is below the threshold of 1, so: stay in. With "sunny" and "tired" both on, what's the smallest change that gets me out of the door? Stop being tired, make "sunny" count for more, or drop the threshold: any of them will do. (A friend alone isn't enough: −1 + 1.5 = 0.5, still below 1.)*
+**The neuron adds up the weights of the signals that are on, and fires if the total is above 3.**
+
+Now let's try to answer whether I go for a run or not using this. (Try to do the math by hand before moving forward.)
 
 <!-- interactive: readers flip the run neuron's inputs and drag its weights and threshold, and watch the total and the decision change -->
 ![The run neuron: flipping inputs and moving a weight or the threshold changes the total and the decision](images/run.gif)
+
+So, where does the logic live? It's all in the **weights and the bias**.
+
+*The structure is the same for every neuron that ever existed. But the knowledge lives entirely in its weights and bias.*
 
 ### The weights are the program!
 
 *Change the weight, and the decision changes.*
 
-Remember the **parameters** from Part 01, "the adjustable numbers inside the model"? These weights are exactly that. [GPT-3](https://arxiv.org/abs/2005.14165)'s 175 billion parameters are the same kind of number as these three weights.
+Remember the **parameters** from Part 01, "the adjustable numbers inside the model"? These weights are exactly that. [GPT-3](https://arxiv.org/abs/2005.14165)'s 175 billion parameters are the same kind of number as these two weights.
 
 So then what does **learning** mean?
 
